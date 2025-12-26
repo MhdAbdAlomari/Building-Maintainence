@@ -13,6 +13,9 @@ class TechnicianDetailController extends Controller
     {
         $user=$request->user();
         $detail = TechnicianDetail::where('user_id', $user->id)->first();
+        if (! $detail) {
+          return $this->response(null, 'Technician detail not found', 404);
+    }
         return $this->response(new TechnicianDetailResource($detail));
     }
 

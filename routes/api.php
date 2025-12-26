@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\AdminTechnicianDetailController;
+use App\Http\Controllers\AdminRequestController;
+use App\Http\Controllers\AdminServiceController;
+use App\Http\Controllers\AdminRegionController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\RequestController;
 use App\Http\Controllers\ServiceController;
@@ -19,38 +23,33 @@ Route::post('register',[UserController::class,'register']);
 Route::post('login',[UserController::class,'login']);
 Route::post('logout',[UserController::class,'logout'])->middleware('auth:sanctum');
 
-
-//Route::middleware('auth:sanctum')->get('/requests', [RequestController::class, 'index']);
-//Route::middleware('auth:sanctum')->get('/requests/{id}', [RequestController::class, 'show']);
-//Route::middleware('auth:sanctum')->delete('/requests/{id}', [RequestController::class, 'destroy']);
-//Route::middleware('auth:sanctum')->post('/requests/{id}', [RequestController::class, 'update']);
-//Route::middleware('auth:sanctum')->post('/requests', [RequestController::class, 'store']);
-//Route::group('prefix:')
 Route::middleware('auth:sanctum')->group(function () {
-Route::get('/requests', [RequestController::class, 'index']);
-Route::get('/requests/{id}', [RequestController::class, 'show']);
-Route::post('/requests', [RequestController::class, 'store']);
-Route::put('/requests/{id}', [RequestController::class, 'update']);
-Route::delete('/requests/{id}', [RequestController::class, 'destroy']);
 
+    // Profile
+    Route::get('profile',  [UserController::class, 'profile']);
+    Route::patch('profile', [UserController::class, 'updateProfile']);
+    Route::patch('profile/password', [UserController::class, 'updatePassword']);
 });
 
+
+
+//for Tenant
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('requests', RequestController::class);
+});
+
+
+//for Technician
 Route::middleware(['auth:sanctum','role:technician'])->group(function () {
     Route::get ('/technician-details', [TechnicianDetailController::class, 'index']);
     Route::patch('/technician-details', [TechnicianDetailController::class, 'update']);
 });
 
-Route::middleware(['auth:sanctum','role:admin'])->prefix('admin')->group(function () {
-    Route::get   ('/technician-details',        [AdminTechnicianDetailController::class, 'index']);
-    Route::post  ('/technician-details',        [AdminTechnicianDetailController::class, 'store']);
-    Route::get   ('/technician-details/{id}',   [AdminTechnicianDetailController::class, 'show']);
-    Route::patch ('/technician-details/{id}',   [AdminTechnicianDetailController::class, 'update']);
-    Route::delete('/technician-details/{id}',   [AdminTechnicianDetailController::class, 'destroy']);
-
-   
-});
- Route::get('/services', [ServiceController::class, 'index']);
+    Route::get('/services', [ServiceController::class, 'index']);
     Route::get('/regions',  [RegionController::class, 'index']);
+
+
+
 
     Route::middleware(['auth:sanctum','role:technician'])
     ->prefix('technician/requests')
@@ -67,4 +66,48 @@ Route::middleware(['auth:sanctum','role:admin'])->prefix('admin')->group(functio
         //  قائمة طلبات الفني الحالية
         // Route::get('', [TechnicianRequestController::class, 'index']);
     });
+
+
+    Route::middleware('auth:sanctum')->group(function () {
+    // قائمة صور الطلب
+    Route::get('/requests/{id}/media', [MediaController::class, 'index']);
+    // رفع صورة (قبل/بعد)
+    Route::post('/requests/{id}/media', [MediaController::class, 'store']);
+    // حذف صورة
+    Route::delete('/media/{id}', [MediaController::class, 'destroy']);
+});
+
+
+//Admin
+
+Route::middleware(['auth:sanctum','role:admin'])
+    ->prefix('admin')
+    ->group(function () {
+        //Technician_detail
+        Route::get   ('/technician-details',        [AdminTechnicianDetailController::class, 'index']);
+        Route::post  ('/technician-details',        [AdminTechnicianDetailController::class, 'store']);
+        Route::get   ('/technician-details/{id}',   [AdminTechnicianDetailController::class, 'show']);
+        Route::patch ('/technician-details/{id}',   [AdminTechnicianDetailController::class, 'update']);
+        Route::delete('/technician-details/{id}',   [AdminTechnicianDetailController::class, 'destroy']); 
+
+        // Requests
+        Route::get   ('/requests',        [AdminRequestController::class, 'index']);
+        Route::get   ('/requests/{id}',   [AdminRequestController::class, 'show']);
+        Route::patch ('/requests/{id}',   [AdminRequestController::class, 'update']);
+
+        // Services
+        Route::get   ('/services',        [AdminServiceController::class, 'index']);
+        Route::post  ('/services',        [AdminServiceController::class, 'store']);
+        Route::get   ('/services/{id}',   [AdminServiceController::class, 'show']);
+        Route::patch ('/services/{id}',   [AdminServiceController::class, 'update']);
+        Route::delete('/services/{id}',   [AdminServiceController::class, 'destroy']);
+
+        // Regions
+        Route::get   ('/regions',         [AdminRegionController::class, 'index']);
+        Route::post  ('/regions',         [AdminRegionController::class, 'store']);
+        Route::get   ('/regions/{id}',    [AdminRegionController::class, 'show']);
+        Route::patch ('/regions/{id}',    [AdminRegionController::class, 'update']);
+        Route::delete('/regions/{id}',    [AdminRegionController::class, 'destroy']);
+    });
+
 
