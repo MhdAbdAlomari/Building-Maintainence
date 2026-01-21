@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AddressController;
 use App\Http\Controllers\AdminTechnicianDetailController;
 use App\Http\Controllers\AdminRequestController;
 use App\Http\Controllers\AdminServiceController;
@@ -11,6 +12,8 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\TechnicianDetailController;
 use App\Http\Controllers\TechnicianRequestController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -54,6 +57,8 @@ Route::middleware(['auth:sanctum','role:technician'])->group(function () {
     Route::middleware(['auth:sanctum','role:technician'])
     ->prefix('technician/requests')
     ->group(function () {
+        Route::get('/pending', [TechnicianRequestController::class, 'index']);
+        Route::get('{id}', [TechnicianRequestController::class, 'show']);
         // يقبل طلب معلّق وغير معيَّن لفنّي آخر
         Route::patch('{id}/accept',     [TechnicianRequestController::class, 'accept']);
 
@@ -109,5 +114,25 @@ Route::middleware(['auth:sanctum','role:admin'])
         Route::patch ('/regions/{id}',    [AdminRegionController::class, 'update']);
         Route::delete('/regions/{id}',    [AdminRegionController::class, 'destroy']);
     });
+    Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/addresses', [AddressController::class, 'index']);
+    Route::get('/addresses/{id}', [AddressController::class, 'show']);
+    Route::post('/addresses', [AddressController::class, 'store']);
+    Route::put('/addresses/{id}', [AddressController::class, 'update']);
+    Route::delete('/addresses/{id}', [AddressController::class, 'destroy']);
+
+});
+
+    
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('requests/{id}/pay', [PaymentController::class, 'pay']);
+    });
+
+    // webhook بدون auth
+    
+// webhook بدون auth
+    Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
+
 
 

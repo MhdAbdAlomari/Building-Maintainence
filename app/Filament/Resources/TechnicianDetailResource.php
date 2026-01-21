@@ -73,7 +73,17 @@ class TechnicianDetailResource extends Resource
 
                 Tables\Columns\TextColumn::make('service.name')
                     ->label('Service')
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color(fn (?string $state): string => match (strtolower($state ?? '')) {
+                        'plumbing'   => 'info',
+                        'electrical' => 'warning',
+                        'painting'   => 'success',
+                        'hvac'       => 'danger',
+                        'carpentry'  => 'gray',
+                        default      => 'primary',
+                    }),
+
 
                 Tables\Columns\TextColumn::make('years_of_experience')
                     ->label('Years')

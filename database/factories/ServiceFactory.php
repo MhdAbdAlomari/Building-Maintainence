@@ -17,7 +17,7 @@ class ServiceFactory extends Factory
     public function definition(): array
     {
          return [                                       //'سباكة','كهرباء','نجارة','دهان','تبريد/تكييف'
-              'name'      => $this->faker->randomElement(['Plumbing','Electrical','Carpentry','Painting','HVAC']),
+            'name'      => $this->faker->randomElement(['Plumbing','Electrical','Carpentry','Painting','HVAC']),
             'description' => $this->faker->optional()->sentence(8),
             'min_price'   => $this->faker->randomFloat(2, 25, 150),
         ];

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
                 TechnicianDetailSeeder::class,
                 RequestSeeder::class,
                 MediaSeeder::class,
+                AddressSeeder::class
                 
                 
             ]

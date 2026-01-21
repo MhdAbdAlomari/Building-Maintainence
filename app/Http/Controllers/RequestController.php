@@ -30,15 +30,26 @@ class RequestController extends Controller
     {
       $user = $request->user();           // المستخدم الحالي (tenant)
       $data=$request->validated();
+      $address = $user->addresses()->findOrFail($data['address_id']);
+      $data['region_id'] = $address->region_id;
       $item= $request->user()->createdRequests()->create($data);//tenant_idلضمان لا أحد يستطيع ان يمرر ال 
-
+      $item->refresh();
       return $this->response(new RequestResource($item,'success', 201));
       }
 
       public function update(UpdateRequestForm $request, $id)
     {
-        $item = $request->user()->createdRequests()->findOrFail($id);
-        $item->update($request->validated());
+        $user = $request->user();
+        $data = $request->validated();
+
+        $item = $user->createdRequests()->findOrFail($id);
+
+        $address = $user->addresses()->findOrFail($data['address_id']);
+        $data['region_id'] = $address->region_id;
+
+        $item->update($data);
+        
+
         return $this->response(new RequestResource($item));
     }
     public function destroy(HttpRequest $request,$id) 

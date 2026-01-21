@@ -3,36 +3,49 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Widgets\LatestRequests;
+use App\Filament\Widgets\MyAssets;
+use App\Filament\Widgets\QuickActions;
 use App\Filament\Widgets\RequestStats;
 use App\Filament\Widgets\TechnicianStats;
+use App\Filament\Widgets\WelcomeAdmin;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
 {
-
-
-    // أيقونة الـ Dashboard في القائمة الجانبية
     protected static ?string $navigationIcon = 'heroicon-o-home';
-
-    // النص اللي يظهر في المينيو
     protected static ?string $navigationLabel = 'Dashboard';
-
-    // مهم: خليه null أو احذف الخاصية حتى يختفي عنوان المجموعة "لوحة التحكم"
     protected static ?string $navigationGroup = null;
-
-    // لو حابب تغيّر عنوان الصفحة فوق
     protected static ?string $title = 'Dashboard';
+
+    // ✅ خلي الهيدر (Welcome) لحاله فوق
+    public function getHeaderWidgets(): array
+    {
+        return [
+            WelcomeAdmin::class,
+        ];
+    }
+
+    // ✅ الهيدر عمود واحد (حتى ما يجي جنب شي)
+    public function getHeaderWidgetsColumns(): int|array
+    {
+        return 1;
+    }
+
+    // ✅ باقي الصفحة عمودين (مثل ما بدك)
+    public function getColumns(): int|array
+    {
+        return 2;
+    }
+
     public function getWidgets(): array
-{
-    return [
-        RequestStats::class,
-        TechnicianStats::class,
-        LatestRequests::class,
-    ];
-}
+    {
+        return [
+            MyAssets::class,
+            QuickActions::class,
 
-    // ما نحتاج نحدد الودجات هنا بما أننا حطيناها في AdminPanelProvider
-    // إذا حبيت تتحكم في ترتيبهم من هنا بدل الـ Provider، نقدر نعملها لاحقاً.
-    
+            RequestStats::class,
+            TechnicianStats::class,
+            LatestRequests::class,
+        ];
+    }
 }
-

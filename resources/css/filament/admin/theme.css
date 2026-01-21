@@ -1,0 +1,101 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@config 'tailwind.config.js';
+.fi-section,
+.fi-card,
+.fi-fo-section,
+.fi-fo-form,
+.fi-ta-card {
+  background: rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* fallback for different class names */
+.fi-dashboard .grid {
+    align-items: start !important;
+}
+.fi-topbar .fi-user-menu-trigger .fi-avatar {
+  background: rgba(48,153,73,0.18) !important;
+  border: 1px solid rgba(48,153,73,0.28) !important;
+  color: rgb(23,102,47) !important;
+}
+.fi-topbar .fi-user-menu-trigger .fi-avatar * {
+  color: rgb(23,102,47) !important;
+}
+
+
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+/* الخلفية */
+.fi-body {
+  background-image: url('C:\xampp1\htdocs\Building-Maintainence\public\images\admin-bg.png'); /* مهم: خليها path ويب مش مسار ويندوز */
+  background-repeat: no-repeat;
+
+  background-size: clamp(700px, 55vw, 1200px) auto;
+  background-position: 95% 85%;
+  background-attachment: fixed;
+
+  /* يقوّي ألوان الصورة */
+  filter: saturate(1.35) contrast(1.12) brightness(1.);
+}
+
+/* Overlay (خفّف الأبيض خصوصًا باليمين) */
+.fi-body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.86) 0%,
+    rgba(255,255,255,0.70) 45%,
+    rgba(255,255,255,0.22) 100%
+  );
+}
+
+/* لمسة خضرا أقوى يمين تحت */
+.fi-body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+
+  background: radial-gradient(
+    circle at 88% 85%,
+    rgba(48,153,73,0.18) 0%,
+    rgba(48,153,73,0.10) 28%,
+    rgba(48,153,73,0.00) 60%
+  );
+}
+
+/* ارفع كل محتوى فلمنت فوق الـ overlay
+   (مهم جدًا لصفحة login لأنها fi-simple-layout) */
+.fi-layout,
+.fi-main,
+.fi-topbar,
+.fi-sidebar,
+.fi-simple-layout,
+.fi-simple-main,
+.fi-simple-page,
+.fi-simple-layout-content {
+  position: relative;
+  z-index: 1;
+}
+/* رجّع الـ Topbar فوق كل شيء (حل مشكلة Sign out) */
+.fi-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 9998 !important;
+}
+
+/* أي Dropdown/Popover لازم يكون فوق المحتوى */
+.fi-dropdown-panel,
+[data-floating-ui-portal],
+.tippy-box {
+  z-index: 9999 !important;
+}
+

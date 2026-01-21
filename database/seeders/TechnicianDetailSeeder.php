@@ -19,7 +19,7 @@ class TechnicianDetailSeeder extends Seeder
 
         
         User::where('role', 'technician')->get()->each(function ($tech) use ($serviceIds) {
-            TechnicianDetail::firstOrCreate(// مرة ثانية seederلضمان عدم تكرار السجل لو شغلنا ال  firstOrCreate استخدمنا 
+            TechnicianDetail::updateOrCreate(// مرة ثانية seederلضمان عدم تكرار السجل لو شغلنا ال  firstOrCreate استخدمنا 
                 ['user_id' => $tech->id],
                 ['service_id' => $serviceIds->random(), 'years_of_experience' => 3]//عشوائي ID ينشئ  service لل  IDهنا اذا لم يجد 
             );

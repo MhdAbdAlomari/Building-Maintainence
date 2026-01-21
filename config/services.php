@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'stripe' => [
+    'secret' => env('STRIPE_SECRET'),
+    'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    'currency' => env('STRIPE_CURRENCY', 'usd'),
+],
+
+    'exchange' => [
+    'syp_per_usd' => (float) env('SYP_PER_USD', 15000),
+],
+
+
 ];

@@ -34,5 +34,16 @@ public function media()
 {
     return $this->hasMany(Media::class);
 }
+public function address()
+{
+    return $this->belongsTo(Address::class);
+}
+public function payments()
+{
+    return $this->hasMant(Payment::class);
+}
+
+
+
 
 }

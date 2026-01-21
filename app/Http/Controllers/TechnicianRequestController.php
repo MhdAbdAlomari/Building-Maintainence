@@ -13,12 +13,31 @@ class TechnicianRequestController extends Controller
      */
     public function index(HttpRequest $request)
     {
-        $items = WorkRequest::where('technician_id', $request->user()->id)
-            ->latest()
+        $tech = $request->user();
+
+        $items = WorkRequest::query()
+            ->where('status', 'pending')
+            // إذا بدك فقط الطلبات غير المسندة لفني:
+            ->whereNull('technician_id')
+            // (اختياري) فلترة حسب منطقة الفني إذا عندك region_id على user:
+           // ->when($tech->region_id, fn ($q) => $q->where('region_id', $tech->region_id))
+           // ->latest()
             ->get();
 
         return $this->response(RequestResource::collection($items));
     }
+   
+    public function show(HttpRequest $request, $id)
+{
+    $user = $request->user();
+
+    $item = WorkRequest::where('id', $id)
+        ->where('technician_id', $user->id) // لازم يكون مسند له
+        ->firstOrFail();
+
+    return $this->response(new RequestResource($item));
+}
+
 
     /**
      * فني يقبل طلب "pending" وغير مُعيَّن لفني آخر.
@@ -129,8 +148,21 @@ class TechnicianRequestController extends Controller
             return $this->response(null, 'Cannot complete from this status', 422);
         }
 
-        $item->update(['status' => 'complete']);
+        $data = $request->validate([
+        'final_price_syp' => ['required','integer','min:1'],
+    ]);
 
-        return $this->response(new RequestResource($item->fresh()));
-    }
+    // (اختياري) منع تغيير بعد الدفع
+        if ($item->is_paid) {
+            return $this->response(null, 'Already paid', 422);
+        }
+
+        $item->update([
+            'final_price_syp' => $data['final_price_syp'],
+            'status' => 'complete',
+        ]);
+
+    return $this->response(new RequestResource($item->fresh()));
 }
+   }       
+

@@ -13,7 +13,7 @@ class LatestRequests extends BaseWidget
     protected int|string|array $columnSpan = 'full';
 
     // ترتيب الويجت في الصفحة (اختياري)
-    protected static ?int $sort = 2;
+    protected static ?int $sort = 6;
 
     protected function getTableQuery(): Builder
     {
@@ -23,28 +23,67 @@ class LatestRequests extends BaseWidget
     }
 
     protected function getTableColumns(): array
-    {
-        return [
-            Tables\Columns\TextColumn::make('id')
-                ->label('#')
-                ->sortable(),
+{
+    return [
+        Tables\Columns\TextColumn::make('id')
+            ->label('#')
+            ->sortable()
+            ->toggleable(isToggledHiddenByDefault: true) // إذا بدك تخفيه افتراضياً
+            ->alignCenter(),
 
-            Tables\Columns\TextColumn::make('tenant.name')
-                ->label('Tenant')
-                ->searchable(),
+        Tables\Columns\TextColumn::make('tenant.name')
+            ->label('Tenant')
+            ->searchable()
+            ->limit(24)
+            ->weight('medium'),
 
-            Tables\Columns\TextColumn::make('service.name')
-                ->label('Service'),
+        Tables\Columns\TextColumn::make('service.name')
+            ->label('Service')
+            ->sortable()
+            ->badge()
+             ->color(fn (?string $state): string => match (strtolower($state ?? '')) {
+                        'plumbing'   => 'info',
+                        'electrical' => 'warning',
+                        'painting'   => 'success',
+                        'hvac'       => 'danger',
+                        'carpentry'  => 'gray',
+                        default      => 'primary',
+                    }),
 
-            Tables\Columns\TextColumn::make('region.name')
-                ->label('Region'),
+        Tables\Columns\TextColumn::make('region.name')
+            ->label('Region')
+            ->sortable()
+            ->toggleable(),
 
-            Tables\Columns\TextColumn::make('status')
-                ->badge(),
+        Tables\Columns\TextColumn::make('status')
+            ->label('Status')
+            ->badge()
+            ->formatStateUsing(fn (string $state) => match ($state) {
+                'pending'    => 'Pending',
+                'accepted'   => 'Accepted',
+                'on_the_way' => 'Processing',
+                'complete'   => 'Done',
+                'canceled'   => 'Canceled',
+                default      => ucfirst(str_replace('_', ' ', $state)),
+            })
+            ->color(fn (string $state): string => match ($state) {
+                'pending'    => 'warning',
+                'accepted'   => 'info',
+                'on_the_way' => 'primary',
+                'complete'   => 'success',
+                'canceled'   => 'danger',
+                default      => 'gray',
+            })
+            ->alignCenter(),
 
-            Tables\Columns\TextColumn::make('created_at')
-                ->label('Created')
-                ->since(), // مثلاً "2 hours ago"
-        ];
-    }
+        Tables\Columns\TextColumn::make('created_at')
+            ->label('Created')
+            ->since()
+            ->color('gray')
+            ->sortable()
+            ->alignEnd(),
+    ];
+}
+
+    
 }

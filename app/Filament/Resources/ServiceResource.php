@@ -45,7 +45,17 @@ class ServiceResource extends Resource
 
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color(fn (?string $state): string => match (strtolower($state ?? '')) {
+                        'plumbing'   => 'info',
+                        'electrical' => 'warning',
+                        'painting'   => 'success',
+                        'hvac'       => 'danger',
+                        'carpentry'  => 'gray',
+                        default      => 'primary',
+                    }),
+
 
                 Tables\Columns\TextColumn::make('min_price')
                     ->money('SYP', true)   // او غير العملة لو حاب
