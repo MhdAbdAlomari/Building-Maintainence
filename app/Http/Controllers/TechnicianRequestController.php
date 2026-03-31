@@ -3,166 +3,205 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\RequestResource;
-use App\Models\Request as WorkRequest;           // موديل الطلبات
-use Illuminate\Http\Request as HttpRequest;      // طلب HTTP
+use App\Models\Request as WorkRequest;
+use Illuminate\Http\Request as HttpRequest;
 
 class TechnicianRequestController extends Controller
 {
     /**
-     * قائمة طلبات الفني المعيّنة له.
+     * قائمة الطلبات المفتوحة المتاحة للفني.
+     * الشرط:
+     * - الحالة pending
+     * - غير مسندة لأي فني
      */
-    public function index(HttpRequest $request)
+    public function availableRequests(HttpRequest $request)
     {
-        $tech = $request->user();
-
         $items = WorkRequest::query()
             ->where('status', 'pending')
-            // إذا بدك فقط الطلبات غير المسندة لفني:
             ->whereNull('technician_id')
-            // (اختياري) فلترة حسب منطقة الفني إذا عندك region_id على user:
-           // ->when($tech->region_id, fn ($q) => $q->where('region_id', $tech->region_id))
-           // ->latest()
+            ->latest()
             ->get();
 
         return $this->response(RequestResource::collection($items));
     }
-   
-    public function show(HttpRequest $request, $id)
-{
-    $user = $request->user();
-
-    $item = WorkRequest::where('id', $id)
-        ->where('technician_id', $user->id) // لازم يكون مسند له
-        ->firstOrFail();
-
-    return $this->response(new RequestResource($item));
-}
-
 
     /**
-     * فني يقبل طلب "pending" وغير مُعيَّن لفني آخر.
-     * استدعاء: PATCH /api/technician/requests/{id}/accept
+     * عرض طلب مسند لنفس الفني فقط.
      */
-    public function accept(HttpRequest $request, $id)
+    public function showAssignedRequest(HttpRequest $request, $id)
     {
         $user = $request->user();
 
-        // 1) جب الطلب أولًا (بدون فلترة حالة مسبقة)
+        $item = WorkRequest::where('id', $id)
+            ->where('technician_id', $user->id) // أضمن أن الطلب يخص هذا الفني
+            ->firstOrFail();
+
+        return $this->response(new RequestResource($item));
+    }
+
+    /**
+     * الفني يرسل السعر التقديري ويستلم الطلب.
+     * الانتقال:
+     * pending -> estimate_price
+     */
+    public function sendEstimate(HttpRequest $request, $id)
+    {
+        $user = $request->user();
+
+        // جلب الطلب أولًا بدون تقييد مسبق بالحالة
         $item = WorkRequest::where('id', $id)->firstOrFail();
 
-        // 2) حالات منتهية
-        if (in_array($item->status, ['complete', 'canceled'])) {
-            return $this->response(null, 'Request already finished/canceled', 422);
+        // إذا كان الطلب مغلقًا فلا يمكن التعامل معه
+        if (in_array($item->status, ['completed', 'cancelled', 'rejected'])) {
+            return $this->response(null, 'Request already closed', 422);
         }
 
-        // 3) لو الطلب مُعيَّن
+        // إذا كان الطلب مسندًا أصلًا
         if (!is_null($item->technician_id)) {
 
-            // مُعيَّن لنفس الفني
+            // إذا كان مسندًا لنفس الفني
             if ((int) $item->technician_id === (int) $user->id) {
-                if ($item->status === 'accepted') {
-                    return $this->response(new RequestResource($item), 'Already accepted', 200);
+                // إذا كان السعر التقديري مرسلًا مسبقًا
+                if ($item->status === 'estimate_price') {
+                    return $this->response(new RequestResource($item), 'Estimate already sent', 200);
                 }
-                return $this->response(null, 'Cannot accept from current status', 422);
+
+                return $this->response(null, 'Cannot send estimate from current status', 422);
             }
 
-            // مُعيَّن لفني آخر
+            // إذا كان مسندًا لفني آخر
             return $this->response(null, 'Already assigned to another technician', 409);
         }
 
-        // 4) الطلب مفتوح: لازم يكون pending
+        // لا يُسمح بإرسال السعر إلا إذا كانت الحالة pending
         if ($item->status !== 'pending') {
-            return $this->response(null, 'Only pending requests can be accepted', 422);
+            return $this->response(null, 'Only pending requests can receive an estimate', 422);
         }
 
-        // (اختياري) التحقق من التخصص
-        // if ($user->technicianDetails?->service_id !== $item->service_id) {
-        //     return $this->response(null, 'Not your specialization', 403);
-        // }
+        // بيانات السعر التقديري
+        $data = $request->validate([
+            'estimated_price' => ['required', 'integer', 'min:1'],
+            'estimate_note' => ['nullable', 'string'],
+        ]);
 
-        // 5) اقبل وعيّن الفني
         $item->update([
-            'technician_id' => $user->id,
-            'status'        => 'accepted',
+            'technician_id' => $user->id,                     // إسناد الطلب لهذا الفني
+            'estimated_price' => $data['estimated_price'],   // السعر التقديري
+            'estimate_note' => $data['estimate_note'] ?? null,
+            'status' => 'estimate_price',
+            'estimated_at' => now(),
         ]);
 
         return $this->response(new RequestResource($item->fresh()));
     }
 
     /**
-     * الفني يعلن أنه "بالطريق".
-     * استدعاء: PATCH /api/technician/requests/{id}/on-the-way
+     * الفني يبدأ التنفيذ.
+     * الانتقال:
+     * confirmed -> processing
      */
-    public function onTheWay(HttpRequest $request, $id)
+    public function startProcessing(HttpRequest $request, $id)
     {
         $user = $request->user();
 
-        // جب الطلب بدون فلترة حالة
         $item = WorkRequest::where('id', $id)
-            ->where('technician_id', $user->id) // أضمن أني الفني المعيّن
+            ->where('technician_id', $user->id) // الطلب يجب أن يكون مسندًا لنفس الفني
             ->firstOrFail();
 
-        // حالات نهائية
-        if (in_array($item->status, ['complete', 'canceled'])) {
-            return $this->response(null, 'Request finished/canceled', 422);
+        // إذا كان الطلب مغلقًا
+        if (in_array($item->status, ['completed', 'cancelled', 'rejected'])) {
+            return $this->response(null, 'Request already closed', 422);
         }
 
-        // لو هو أصلًا on_the_way
-        if ($item->status === 'on_the_way') {
-            return $this->response(new RequestResource($item), 'Already on the way', 200);
+        // إذا كان أصلًا في مرحلة التنفيذ
+        if ($item->status === 'processing') {
+            return $this->response(new RequestResource($item), 'Already processing', 200);
         }
 
-        // ما بصير أنتقل لـ on_the_way إلا من accepted
-        if ($item->status !== 'accepted') {
-            return $this->response(null, 'Cannot go on-the-way from this status', 422);
+        // لا يبدأ التنفيذ إلا بعد موافقة العميل على السعر التقديري
+        if ($item->status !== 'confirmed') {
+            return $this->response(null, 'Only confirmed requests can move to processing', 422);
         }
 
-        $item->update(['status' => 'on_the_way']);
+        $item->update([
+            'status' => 'processing',
+            'processing_at' => now(),
+        ]);
+
+        return $this->response(new RequestResource($item->fresh()));
+    }
+
+        /**
+     * أثناء processing:
+     * إذا ظهرت تكلفة إضافية، يرسل الفني طلب موافقة.
+     * processing -> awaiting_final_approval
+     */
+    public function requestFinalApproval(HttpRequest $request, $id)
+    {
+        $user = $request->user();
+
+        $item = WorkRequest::where('id', $id)
+            ->where('technician_id', $user->id)
+            ->firstOrFail();
+
+        if ($item->status !== 'processing') {
+            return $this->response(null, 'Only processing requests can request final approval', 422);
+        }
+
+        $data = $request->validate([
+            'requested_final_price_syp' => ['required', 'integer', 'min:1'],
+            'final_approval_note' => ['required', 'string'],
+        ]);
+
+        if (!is_null($item->estimated_price) && (int) $data['requested_final_price_syp'] <= (int) $item->estimated_price) {
+            return $this->response(null, 'Requested final price must be greater than estimated price', 422);
+        }
+
+        $item->update([
+            'requested_final_price_syp' => $data['requested_final_price_syp'],
+            'final_approval_note' => $data['final_approval_note'],
+            'status' => 'awaiting_final_approval',
+            'final_approval_requested_at' => now(),
+        ]);
 
         return $this->response(new RequestResource($item->fresh()));
     }
 
     /**
-     * الفني يعلّم الطلب كمكتمل.
-     * استدعاء: PATCH /api/technician/requests/{id}/complete
+     * إنهاء الطلب بعد اكتمال الصيانة.
+     * لا يُسمح هنا بإرسال سعر أعلى من التقديري
+     * إلا إذا كانت الموافقة قد تمت مسبقًا أثناء processing.
      */
-    public function complete(HttpRequest $request, $id)
+    public function submitFinalPrice(HttpRequest $request, $id)
     {
         $user = $request->user();
 
-        // جب الطلب بدون فلترة حالة
         $item = WorkRequest::where('id', $id)
-            ->where('technician_id', $user->id) // أضمن أني الفني المعيّن
+            ->where('technician_id', $user->id)
             ->firstOrFail();
 
-        // حالات نهائية
-        if ($item->status === 'canceled') {
-            return $this->response(null, 'Request was canceled', 422);
-        }
-        if ($item->status === 'complete') {
-            return $this->response(new RequestResource($item), 'Already completed', 200);
+        if ($item->status !== 'processing') {
+            return $this->response(null, 'Only processing requests can be completed', 422);
         }
 
-        // لازم أكمله فقط من accepted أو on_the_way
-        if (!in_array($item->status, ['accepted', 'on_the_way'])) {
-            return $this->response(null, 'Cannot complete from this status', 422);
-        }
-
-        $data = $request->validate([
-        'final_price_syp' => ['required','integer','min:1'],
-    ]);
-
-    // (اختياري) منع تغيير بعد الدفع
         if ($item->is_paid) {
             return $this->response(null, 'Already paid', 422);
         }
 
-        $item->update([
-            'final_price_syp' => $data['final_price_syp'],
-            'status' => 'complete',
+        $data = $request->validate([
+            'final_price_syp' => ['required', 'integer', 'min:1'],
         ]);
 
-    return $this->response(new RequestResource($item->fresh()));
-}
-   }       
+        if (!is_null($item->estimated_price) && (int) $data['final_price_syp'] > (int) $item->estimated_price) {
+            return $this->response(null, 'Final price cannot exceed estimated price without prior approval', 422);
+        }
 
+        $item->update([
+            'final_price_syp' => $data['final_price_syp'],
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        return $this->response(new RequestResource($item->fresh()));
+    }
+}

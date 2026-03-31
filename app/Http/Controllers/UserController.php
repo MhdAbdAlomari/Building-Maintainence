@@ -125,7 +125,6 @@ class UserController extends Controller
                 'role'      => $user->role,
                 'address'   => $user->address,
                 'region_id' => $user->region_id,
-                ''
                 ]
         ]);
     }

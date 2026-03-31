@@ -3,48 +3,41 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Carbon;
 
 class RequestResource extends JsonResource
 {
-    private function statusForMobile(?string $status): ?string
-    {
-        return match ($status) {
-            'pending'    => 'pending',
-            'accepted'   => 'accept',
-            'on_the_way' => 'processing',
-            'complete'   => 'done',
-            'canceled'   => 'canceled',
-            default      => $status,
-        };
-    }
-
-    public function toArray($request)
+    public function toArray($request): array
     {
         return [
-            'id'             => $this->id,
+            'id' => $this->id,
+            'status' => $this->status,
+            'service_id' => $this->service_id,
+            'title' => $this->title,
+            'description' => $this->description,
 
-            // backend canonical (لا تغيّره)
-            'status'         => $this->status,
+            'scheduled_date' => $this->scheduled_date
+                ? Carbon::parse($this->scheduled_date)->format('Y-m-d')
+                : null,
 
-            // mobile-friendly status
-            'status_mobile'  => $this->statusForMobile($this->status),
+            'scheduled_time' => $this->scheduled_time
+                ? Carbon::parse($this->scheduled_time)->format('H:i')
+                : null,
 
-            'service_id'     => $this->service_id,
-           // 'address_id'     => $this->address_id,
-            'region_id'      => $this->address?->region_id,
+            'estimated_price' => $this->estimated_price,
+            'estimate_note' => $this->estimate_note,
 
-            'title'          => $this->title,
-            'description'    => $this->description,
-            'scheduled_date' => $this->scheduled_date,
-            'scheduled_time' => $this->scheduled_time,
-
-            // payment fields7
+            'requested_final_price_syp' => $this->requested_final_price_syp,
+            'final_approval_note' => $this->final_approval_note,
+            'final_approval_requested_at' => $this->final_approval_requested_at,
+            
             'final_price_syp' => $this->final_price_syp,
-            'final_price_syp_label' => number_format((int)$this->final_price_syp) . ' SYP',
-            'is_paid'         => (bool) $this->is_paid,
-            'paid_at'         => $this->paid_at,
-
-            'can_pay' => $this->status === 'complete'
+            'final_price_syp_label' => $this->final_price_syp
+                ? number_format((int) $this->final_price_syp) . ' SYP'
+                : null,
+            'is_paid' => (bool) $this->is_paid,
+            'paid_at' => $this->paid_at,
+            'can_pay' => $this->status === 'completed'
                 && !empty($this->final_price_syp)
                 && !$this->is_paid,
         ];

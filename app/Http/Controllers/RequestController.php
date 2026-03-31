@@ -27,31 +27,21 @@ class RequestController extends Controller
 
 
     public function store(StoreRequestForm $request)
-    {
-      $user = $request->user();           // المستخدم الحالي (tenant)
-      $data=$request->validated();
-      $address = $user->addresses()->findOrFail($data['address_id']);
-      $data['region_id'] = $address->region_id;
-      $item= $request->user()->createdRequests()->create($data);//tenant_idلضمان لا أحد يستطيع ان يمرر ال 
-      $item->refresh();
-      return $this->response(new RequestResource($item,'success', 201));
-      }
+{
+    $item = $request->user()->createdRequests()->create($request->validated());
+    $item->refresh();
+
+    return $this->response(new RequestResource($item), 'success', 201);
+}
 
       public function update(UpdateRequestForm $request, $id)
-    {
-        $user = $request->user();
-        $data = $request->validated();
+{
+    $item = $request->user()->createdRequests()->findOrFail($id);
+    $item->update($request->validated());
 
-        $item = $user->createdRequests()->findOrFail($id);
+    return $this->response(new RequestResource($item));
+}
 
-        $address = $user->addresses()->findOrFail($data['address_id']);
-        $data['region_id'] = $address->region_id;
-
-        $item->update($data);
-        
-
-        return $this->response(new RequestResource($item));
-    }
     public function destroy(HttpRequest $request,$id) 
     {
         $item = $request->user()->createdRequests()->findOrFail($id);
@@ -59,5 +49,78 @@ class RequestController extends Controller
         return $this->response(null, 'The request has been deleted');
     }
 
+
+    public function confirmEstimate(HttpRequest $request, $id)
+{
+    $item = $request->user()
+        ->createdRequests()
+        ->findOrFail($id);
+
+    if ($item->status !== 'estimate_price') {
+        return $this->response(null, 'Only estimated requests can be confirmed', 422);
+    }
+
+    $item->update([
+        'status' => 'confirmed',
+        'confirmed_at' => now(),
+    ]);
+
+    return $this->response(new RequestResource($item->fresh()));
 }
 
+    public function rejectEstimate(HttpRequest $request, $id)
+    {
+        $item = $request->user()
+            ->createdRequests()
+            ->findOrFail($id);
+
+        if ($item->status !== 'estimate_price') {
+            return $this->response(null, 'Only estimated requests can be rejected', 422);
+        }
+
+        $item->update([
+            'status' => 'rejected',
+            'rejected_at' => now(),
+        ]);
+
+        return $this->response(new RequestResource($item->fresh()));
+    }
+    
+
+   public function approveFinalPrice(HttpRequest $request, $id)
+{
+    $item = $request->user()
+        ->createdRequests()
+        ->findOrFail($id);
+
+    if ($item->status !== 'awaiting_final_approval') {
+        return $this->response(null, 'Only requests awaiting final approval can be approved', 422);
+    }
+
+    $item->update([
+        'estimated_price' => $item->requested_final_price_syp,
+        'status' => 'processing',
+    ]);
+
+    return $this->response(new RequestResource($item->fresh()));
+}
+
+public function rejectFinalPrice(HttpRequest $request, $id)
+{
+    $item = $request->user()
+        ->createdRequests()
+        ->findOrFail($id);
+
+    if ($item->status !== 'awaiting_final_approval') {
+        return $this->response(null, 'Only requests awaiting final approval can be rejected', 422);
+    }
+
+    $item->update([
+        'status' => 'cancelled',
+        'cancellation_reason' => 'Final approval rejected by tenant',
+        'cancelled_at' => now(),
+    ]);
+
+    return $this->response(new RequestResource($item->fresh()));
+}
+}

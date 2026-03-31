@@ -17,25 +17,34 @@ class UpdateRequestForm extends FormRequest
         $userId = $this->user()?->id;
 
         return [
-            'service_id'     => ['required', 'exists:services,id'],
+            'service_id' => ['required', 'exists:services,id'],
 
-            // نفس التحقق
-            'address_id'     => [
+            'address_id' => [
                 'required',
                 Rule::exists('addresses', 'id')->where('user_id', $userId),
             ],
 
-            'title'          => ['required', 'string', 'max:191'],
-            'description'    => ['required', 'string'],
+            'title' => ['required', 'string', 'max:191'],
+            'description' => ['required', 'string'],
             'scheduled_date' => ['required', 'date', 'after_or_equal:today'],
             'scheduled_time' => ['required', 'date_format:H:i'],
 
-            'region_id'      => ['prohibited'],
-            'tenant_id'      => ['prohibited'],
-            'technician_id'  => ['prohibited'],
-            'status'         => ['prohibited'],
+            'tenant_id' => ['prohibited'],
+            'technician_id' => ['prohibited'],
+            'status' => ['prohibited'],
+            'estimated_price' => ['prohibited'],
+            'estimate_note' => ['prohibited'],
+            'final_price_syp' => ['prohibited'],
+            'is_paid' => ['prohibited'],
+            'paid_at' => ['prohibited'],
             'cancellation_reason' => ['prohibited'],
-            'canceled_at'    => ['prohibited'],
+            'cancelled_at' => ['prohibited'],
+            'estimated_at' => ['prohibited'],
+            'confirmed_at' => ['prohibited'],
+            'processing_at' => ['prohibited'],
+            'final_approval_requested_at' => ['prohibited'],
+            'completed_at' => ['prohibited'],
+            'rejected_at' => ['prohibited'],
         ];
     }
 }

@@ -8,16 +8,24 @@ class UpdateAdminRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // تأكد إنو المستخدم أدمن
         return $this->user() && $this->user()->role === 'admin';
     }
 
     public function rules(): array
     {
         return [
-            'status' => ['sometimes', 'required', 'string', 'in:pending,accepted,on_the_way,complete,canceled'],
-            'technician_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
-           
+            'status' => [
+                'sometimes',
+                'required',
+                'string',
+                'in:pending,estimate_price,confirmed,processing,awaiting_final_approval,completed,rejected,cancelled'
+            ],
+            'technician_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                'exists:users,id'
+            ],
         ];
     }
 }

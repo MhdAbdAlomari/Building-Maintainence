@@ -18,6 +18,7 @@ class StoreTechnicianDetailRequest extends FormRequest
             // 1) بيانات الـ User الجديد (الفني)
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['required','string','max:20'],
             'password' => ['required', 'string', 'min:6'],
 
             'address'   => ['nullable', 'string', 'max:255'],

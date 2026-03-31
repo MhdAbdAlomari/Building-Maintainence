@@ -9,7 +9,6 @@ use Stripe\StripeClient;
 
 class PaymentController extends Controller
 {
-    
     public function pay(HttpRequest $request, $id)
     {
         $tenant = $request->user();
@@ -18,16 +17,19 @@ class PaymentController extends Controller
             ->where('tenant_id', $tenant->id)
             ->firstOrFail();
 
-        if ($item->status !== 'complete') {
-            return $this->response(null, 'Request not complete', 422);
+        // الدفع مسموح فقط بعد اكتمال الطلب فعليًا
+        if ($item->status !== 'completed') {
+            return $this->response(null, 'Request not completed', 422);
         }
+
         if (empty($item->final_price_syp)) {
             return $this->response(null, 'Final price not set', 422);
         }
+
         if ($item->is_paid) {
             return $this->response(null, 'Already paid', 422);
         }
-        
+
         $rate = (float) config('services.exchange.syp_per_usd', 15000);
         $usdCents = (int) round((($item->final_price_syp / $rate) * 100));
         $usdCents = max(50, $usdCents);
@@ -39,7 +41,6 @@ class PaymentController extends Controller
             'currency' => config('services.stripe.currency', 'usd'),
             'status' => 'pending',
         ]);
-        
 
         $stripe = new StripeClient(config('services.stripe.secret'));
 
@@ -65,13 +66,14 @@ class PaymentController extends Controller
             ]],
         ]);
 
-        $payment->update(['stripe_session_id' => $session->id]);
+        $payment->update([
+            'stripe_session_id' => $session->id,
+        ]);
 
         return $this->response([
             'payment_url' => $session->url,
             'amount_syp' => $item->final_price_syp,
             'amount_usd_cents' => $usdCents,
         ]);
-        
     }
 }

@@ -37,9 +37,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 //for Tenant
+// routes/api.php
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('requests', RequestController::class);
 });
+   Route::middleware(['auth:sanctum', 'role:tenant']) 
+   ->prefix('tenant/requests')
+   ->group(function () {
+    Route::patch('{id}/confirm-estimate', [RequestController::class, 'confirmEstimate']);
+    Route::patch('{id}/reject-estimate', [RequestController::class, 'rejectEstimate']);
+    Route::patch('{id}/approve-final-price', [RequestController::class, 'approveFinalPrice']);
+    Route::patch('{id}/reject-final-price', [RequestController::class, 'rejectFinalPrice']);
+});
+
+
 
 
 //for Technician
@@ -54,20 +65,17 @@ Route::middleware(['auth:sanctum','role:technician'])->group(function () {
 
 
 
-    Route::middleware(['auth:sanctum','role:technician'])
+    Route::middleware(['auth:sanctum', 'role:technician'])
     ->prefix('technician/requests')
     ->group(function () {
-        Route::get('/pending', [TechnicianRequestController::class, 'index']);
-        Route::get('{id}', [TechnicianRequestController::class, 'show']);
-        // يقبل طلب معلّق وغير معيَّن لفنّي آخر
-        Route::patch('{id}/accept',     [TechnicianRequestController::class, 'accept']);
+        Route::get('/available', [TechnicianRequestController::class, 'availableRequests']);
+        Route::get('{id}', [TechnicianRequestController::class, 'showAssignedRequest']);
 
-        // يعلِّم أنه بالطريق للعميل (بعد القبول)
-        Route::patch('{id}/on-the-way', [TechnicianRequestController::class, 'onTheWay']);
-
-        // يعلِّم الطلب كمكتمل
-        Route::patch('{id}/complete',   [TechnicianRequestController::class, 'complete']);
-
+        Route::patch('{id}/send-estimate', [TechnicianRequestController::class, 'sendEstimate']);
+        Route::patch('{id}/start-processing', [TechnicianRequestController::class, 'startProcessing']);
+        Route::patch('{id}/request-final-approval', [TechnicianRequestController::class, 'requestFinalApproval']);
+        Route::patch('{id}/submit-final-price', [TechnicianRequestController::class, 'submitFinalPrice']);
+       
         //  قائمة طلبات الفني الحالية
         // Route::get('', [TechnicianRequestController::class, 'index']);
     });

@@ -25,8 +25,8 @@ class StoreAddressRequest extends FormRequest
             'region_id'    => ['required', 'integer', 'exists:regions,id'],
             'label'        => ['nullable', 'string', 'max:50'],
             'address_text' => ['nullable', 'string', 'max:255'],
-            'lat'          => ['required', 'numeric', 'between:-90,90'],
-            'lng'          => ['required', 'numeric', 'between:-180,180'],
+            'latitude'          => ['required', 'numeric', 'between:-90,90'],
+            'longitude'          => ['required', 'numeric', 'between:-180,180'],
             'is_default'   => ['sometimes', 'boolean'],
         ];
     }

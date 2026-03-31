@@ -8,42 +8,49 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Request extends Model
 {
-    use HasFactory;
-    use SoftDeletes;
-    
+    use HasFactory, SoftDeletes;
+
     protected $guarded = ['id', 'created_at', 'updated_at'];
 
-   public function tenant() // الساكن الذي أنشأ الطلب
-{
-    return $this->belongsTo(User::class, 'tenant_id');
-}
+    protected $casts = [
+        'is_paid' => 'boolean',
+        'paid_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'estimated_at' => 'datetime',
+        'confirmed_at' => 'datetime',
+        'processing_at' => 'datetime',
+        'final_approval_requested_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'rejected_at' => 'datetime',
+    ];
 
-public function technician() // الفني المُعين للطلب
-{
-    return $this->belongsTo(User::class, 'technician_id');
-}
-public function service()
-{
-    return $this->belongsTo(Service::class);
-}
-public function region()
-{
-    return $this->belongsTo(Region::class);
-}
-public function media()
-{
-    return $this->hasMany(Media::class);
-}
-public function address()
-{
-    return $this->belongsTo(Address::class);
-}
-public function payments()
-{
-    return $this->hasMant(Payment::class);
-}
+    public function tenant()
+    {
+        return $this->belongsTo(User::class, 'tenant_id');
+    }
 
+    public function technician()
+    {
+        return $this->belongsTo(User::class, 'technician_id');
+    }
 
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
+    }
 
+    public function media()
+    {
+        return $this->hasMany(Media::class);
+    }
 
+    public function address()
+    {
+        return $this->belongsTo(Address::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
 }
