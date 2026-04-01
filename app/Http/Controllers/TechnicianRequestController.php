@@ -131,53 +131,22 @@ class TechnicianRequestController extends Controller
         return $this->response(new RequestResource($item->fresh()));
     }
 
-        /**
-     * أثناء processing:
-     * إذا ظهرت تكلفة إضافية، يرسل الفني طلب موافقة.
-     * processing -> awaiting_final_approval
-     */
-    public function requestFinalApproval(HttpRequest $request, $id)
-    {
-        $user = $request->user();
-
-        $item = WorkRequest::where('id', $id)
-            ->where('technician_id', $user->id)
-            ->firstOrFail();
-
-        if ($item->status !== 'processing') {
-            return $this->response(null, 'Only processing requests can request final approval', 422);
-        }
-
-        $data = $request->validate([
-            'requested_final_price_syp' => ['required', 'integer', 'min:1'],
-            'final_approval_note' => ['required', 'string'],
-        ]);
-
-        if (!is_null($item->estimated_price) && (int) $data['requested_final_price_syp'] <= (int) $item->estimated_price) {
-            return $this->response(null, 'Requested final price must be greater than estimated price', 422);
-        }
-
-        $item->update([
-            'requested_final_price_syp' => $data['requested_final_price_syp'],
-            'final_approval_note' => $data['final_approval_note'],
-            'status' => 'awaiting_final_approval',
-            'final_approval_requested_at' => now(),
-        ]);
-
-        return $this->response(new RequestResource($item->fresh()));
-    }
+    
+   
 
     /**
      * إنهاء الطلب بعد اكتمال الصيانة.
      * لا يُسمح هنا بإرسال سعر أعلى من التقديري
      * إلا إذا كانت الموافقة قد تمت مسبقًا أثناء processing.
      */
+    
     public function submitFinalPrice(HttpRequest $request, $id)
     {
         $user = $request->user();
 
         $item = WorkRequest::where('id', $id)
             ->where('technician_id', $user->id)
+            ->with('additions')
             ->firstOrFail();
 
         if ($item->status !== 'processing') {
@@ -192,8 +161,10 @@ class TechnicianRequestController extends Controller
             'final_price_syp' => ['required', 'integer', 'min:1'],
         ]);
 
-        if (!is_null($item->estimated_price) && (int) $data['final_price_syp'] > (int) $item->estimated_price) {
-            return $this->response(null, 'Final price cannot exceed estimated price without prior approval', 422);
+        $allowedMax = (int) ($item->estimated_price ?? 0) + (int) $item->additions->sum('price_syp');
+
+        if ($allowedMax > 0 && (int) $data['final_price_syp'] > $allowedMax) {
+            return $this->response(null, 'Final price cannot exceed approved total price', 422);
         }
 
         $item->update([
@@ -202,6 +173,6 @@ class TechnicianRequestController extends Controller
             'completed_at' => now(),
         ]);
 
-        return $this->response(new RequestResource($item->fresh()));
+        return $this->response(new RequestResource($item->fresh()->load('additions')));
     }
 }

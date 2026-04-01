@@ -90,10 +90,6 @@ class RequestFactory extends Factory
                 ? $this->faker->optional()->sentence()
                 : null,
 
-            'requested_final_price_syp' => $requestedFinalPrice,
-            'final_approval_note' => $status === 'awaiting_final_approval'
-                ? $this->faker->sentence()
-                : null,
 
             'final_price_syp' => $finalPrice,
             'is_paid' => false,

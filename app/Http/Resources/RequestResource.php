@@ -27,8 +27,6 @@ class RequestResource extends JsonResource
             'estimated_price' => $this->estimated_price,
             'estimate_note' => $this->estimate_note,
 
-            'requested_final_price_syp' => $this->requested_final_price_syp,
-            'final_approval_note' => $this->final_approval_note,
             'final_approval_requested_at' => $this->final_approval_requested_at,
             
             'final_price_syp' => $this->final_price_syp,

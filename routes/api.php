@@ -13,6 +13,7 @@ use App\Http\Controllers\TechnicianDetailController;
 use App\Http\Controllers\TechnicianRequestController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\RequestAdditionController;
 use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -75,6 +76,10 @@ Route::middleware(['auth:sanctum','role:technician'])->group(function () {
         Route::patch('{id}/start-processing', [TechnicianRequestController::class, 'startProcessing']);
         Route::patch('{id}/request-final-approval', [TechnicianRequestController::class, 'requestFinalApproval']);
         Route::patch('{id}/submit-final-price', [TechnicianRequestController::class, 'submitFinalPrice']);
+
+        Route::get('{requestId}/additions', [RequestAdditionController::class, 'index']);
+        Route::post('{requestId}/additions', [RequestAdditionController::class, 'store']);
+        Route::delete('{requestId}/additions/{additionId}', [RequestAdditionController::class, 'destroy']);
        
         //  قائمة طلبات الفني الحالية
         // Route::get('', [TechnicianRequestController::class, 'index']);

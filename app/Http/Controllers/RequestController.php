@@ -87,10 +87,11 @@ class RequestController extends Controller
     }
     
 
-   public function approveFinalPrice(HttpRequest $request, $id)
+  public function approveFinalPrice(HttpRequest $request, $id)
 {
     $item = $request->user()
         ->createdRequests()
+        ->with('additions')
         ->findOrFail($id);
 
     if ($item->status !== 'awaiting_final_approval') {
@@ -98,11 +99,10 @@ class RequestController extends Controller
     }
 
     $item->update([
-        'estimated_price' => $item->requested_final_price_syp,
         'status' => 'processing',
     ]);
 
-    return $this->response(new RequestResource($item->fresh()));
+    return $this->response(new RequestResource($item->fresh()->load('additions')));
 }
 
 public function rejectFinalPrice(HttpRequest $request, $id)

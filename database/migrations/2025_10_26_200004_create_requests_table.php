@@ -51,9 +51,6 @@ return new class extends Migration
 
             $table->unsignedBigInteger('estimated_price')->nullable();
             $table->text('estimate_note')->nullable();
-            
-            $table->unsignedBigInteger('requested_final_price_syp')->nullable();
-            $table->text('final_approval_note')->nullable();
 
             $table->unsignedBigInteger('final_price_syp')->nullable();
             $table->boolean('is_paid')->default(false);

@@ -53,4 +53,17 @@ class Request extends Model
     {
         return $this->hasMany(Payment::class);
     }
+    public function additions()
+    {
+        return $this->hasMany(RequestAddition::class);
+    }
+    public function getAdditionsTotalAttribute(): int
+    {
+        return (int) $this->additions->sum('price_syp');
+    }
+
+    public function getRequestedTotalPriceAttribute(): int
+    {
+        return (int) ($this->estimated_price ?? 0) + (int) $this->additions->sum('price_syp');
+    }
 }
