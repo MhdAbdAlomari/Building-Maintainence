@@ -31,7 +31,7 @@ class AdminTechnicianDetailController extends Controller
             $user = User::create([
                 'name'      => $data['name'],
                 'email'     => $data['email'],
-                'phoe'     => $data['phone'],
+                'phone'     => $data['phone'],
                 'password'  => Hash::make($data['password']),
                 'address'   => $data['address'] ?? null,
                 'region_id' => $data['region_id'] ?? null,
