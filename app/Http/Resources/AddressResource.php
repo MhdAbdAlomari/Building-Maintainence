@@ -17,12 +17,12 @@ class AddressResource extends JsonResource
             'longitude'         => $this->longitude,
             'is_default'  => (bool) $this->is_default,
 
-            'region' => $this->whenLoaded('region', function () {
-                return [
-                    'id'   => $this->region?->id,
-                    'name' => $this->region?->name,
-                ];
-            }),
+           // 'region' => $this->whenLoaded('region', function () {
+             //   return [
+               //     'id'   => $this->region?->id,
+                 //   'name' => $this->region?->name,
+                //];
+            //}),
 
             'created_at' => $this->created_at,
         ];

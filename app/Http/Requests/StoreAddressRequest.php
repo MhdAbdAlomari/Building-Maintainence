@@ -22,7 +22,7 @@ class StoreAddressRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'region_id'    => ['required', 'integer', 'exists:regions,id'],
+            'region_id'    => ['nullable', 'integer', 'exists:regions,id'],
             'label'        => ['nullable', 'string', 'max:50'],
             'address_text' => ['nullable', 'string', 'max:255'],
             'latitude'          => ['required', 'numeric', 'between:-90,90'],
