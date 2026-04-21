@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\RequestResource;
 use App\Models\Request as WorkRequest;
 use Illuminate\Http\Request as HttpRequest;
+use Illuminate\Support\Facades\Auth;
 
 class TechnicianRequestController extends Controller
 {
@@ -38,6 +39,42 @@ class TechnicianRequestController extends Controller
 
         return $this->response(new RequestResource($item));
     }
+
+    public function getByStatus($status)
+{
+    $allowedStatuses = [
+        'pending',
+        'estimate_price',
+        'confirmed',
+        'processing',
+        'awaiting_final_approval',
+        'completed',
+        'cancelled',
+        'rejected',
+    ];
+
+    if (!in_array($status, $allowedStatuses)) {
+        return $this->response([
+            'message' => 'Invalid status value'
+        ], 422);
+    }
+
+    $items = WorkRequest::query()
+        ->when($status === 'pending', function ($query) {
+            $query->where('status', 'pending')
+                  ->whereNull('technician_id');
+        })
+        ->when($status !== 'pending', function ($query) use ($status) {
+            $query->where('status', $status)
+                  ->where('technician_id', Auth::id());
+        })
+        ->latest()
+        ->get();
+
+    return $this->response(RequestResource::collection($items));
+}
+
+    
 
     /**
      * الفني يرسل السعر التقديري ويستلم الطلب.

@@ -71,6 +71,8 @@ Route::middleware(['auth:sanctum','role:technician'])->group(function () {
     ->group(function () {
         Route::get('/available', [TechnicianRequestController::class, 'availableRequests']);
         Route::get('{id}', [TechnicianRequestController::class, 'showAssignedRequest']);
+        Route::get('/status/{status}', [TechnicianRequestController::class, 'getByStatus']);
+
 
         Route::patch('{id}/send-estimate', [TechnicianRequestController::class, 'sendEstimate']);
         Route::patch('{id}/start-processing', [TechnicianRequestController::class, 'startProcessing']);
