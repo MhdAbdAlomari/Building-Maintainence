@@ -79,12 +79,16 @@ Route::middleware(['auth:sanctum','role:technician'])->group(function () {
         Route::patch('{id}/request-final-approval', [TechnicianRequestController::class, 'requestFinalApproval']);
         Route::patch('{id}/submit-final-price', [TechnicianRequestController::class, 'submitFinalPrice']);
 
-        Route::get('{requestId}/additions', [RequestAdditionController::class, 'index']);
+    
         Route::post('{requestId}/additions', [RequestAdditionController::class, 'store']);
-        Route::delete('{requestId}/additions/{additionId}', [RequestAdditionController::class, 'destroy']);
-       
+        Route::delete('{requestId}/additions/{additionId}', [RequestAdditionController::class, 'destroy']);  
         //  قائمة طلبات الفني الحالية
         // Route::get('', [TechnicianRequestController::class, 'index']);
+    });
+     Route::middleware(['auth:sanctum', 'role:tenant,technician'])
+    ->prefix('technician/requests')
+    ->group(function () {
+          Route::get('{requestId}/additions', [RequestAdditionController::class, 'index']);
     });
 
 
