@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\RequestAdditionResource;
 use App\Models\Request as WorkRequest;
+use App\Services\FirebaseNotificationService;
 use Illuminate\Http\Request;
 
 class RequestAdditionController extends Controller
@@ -27,7 +28,7 @@ class RequestAdditionController extends Controller
      * إرسال قائمة الإضافات وطلب موافقة العميل.
      * processing -> awaiting_final_approval
      */
-    public function store(Request $request, $requestId)
+    public function store(Request $request, $requestId, FirebaseNotificationService $firebase)
     {
         $user = $request->user();
 
@@ -59,6 +60,7 @@ class RequestAdditionController extends Controller
             'status' => 'awaiting_final_approval',
             'final_approval_requested_at' => now(),
         ]);
+        $firebase->sendRequestStatusNotification($workRequest);
 
         return $this->response(
             new \App\Http\Resources\RequestResource($workRequest->fresh()->load('additions')),

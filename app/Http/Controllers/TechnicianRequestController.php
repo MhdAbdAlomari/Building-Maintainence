@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\RequestResource;
 use App\Models\Request as WorkRequest;
+use App\Services\FirebaseNotificationService;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\Auth;
 
@@ -81,7 +82,7 @@ class TechnicianRequestController extends Controller
      * الانتقال:
      * pending -> estimate_price
      */
-    public function sendEstimate(HttpRequest $request, $id)
+    public function sendEstimate(HttpRequest $request, $id, FirebaseNotificationService $firebase)
     {
         $user = $request->user();
 
@@ -128,6 +129,7 @@ class TechnicianRequestController extends Controller
             'status' => 'estimate_price',
             'estimated_at' => now(),
         ]);
+        $firebase->sendRequestStatusNotification($item);
 
         return $this->response(new RequestResource($item->fresh()));
     }
@@ -137,7 +139,7 @@ class TechnicianRequestController extends Controller
      * الانتقال:
      * confirmed -> processing
      */
-    public function startProcessing(HttpRequest $request, $id)
+    public function startProcessing(HttpRequest $request, $id, FirebaseNotificationService $firebase)
     {
         $user = $request->user();
 
@@ -164,7 +166,7 @@ class TechnicianRequestController extends Controller
             'status' => 'processing',
             'processing_at' => now(),
         ]);
-
+        $firebase->sendRequestStatusNotification($item);
         return $this->response(new RequestResource($item->fresh()));
     }
 
@@ -177,7 +179,7 @@ class TechnicianRequestController extends Controller
      * إلا إذا كانت الموافقة قد تمت مسبقًا أثناء processing.
      */
     
-    public function submitFinalPrice(HttpRequest $request, $id)
+    public function submitFinalPrice(HttpRequest $request, $id, FirebaseNotificationService $firebase)
     {
         $user = $request->user();
 
@@ -209,7 +211,7 @@ class TechnicianRequestController extends Controller
             'status' => 'completed',
             'completed_at' => now(),
         ]);
-
+        $firebase->sendRequestStatusNotification($item);
         return $this->response(new RequestResource($item->fresh()->load('additions')));
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreRequestForm;
 use App\Http\Requests\UpdateRequestForm;
 use App\Http\Resources\RequestResource;
 use App\Models\Request as WorkRequest;
+use App\Services\FirebaseNotificationService;
 use Illuminate\Http\Request as HttpRequest; 
 class RequestController extends Controller
 {
@@ -50,7 +51,7 @@ class RequestController extends Controller
     }
 
 
-    public function confirmEstimate(HttpRequest $request, $id)
+    public function confirmEstimate(HttpRequest $request, $id, FirebaseNotificationService $firebase)
 {
     $item = $request->user()
         ->createdRequests()
@@ -64,11 +65,13 @@ class RequestController extends Controller
         'status' => 'confirmed',
         'confirmed_at' => now(),
     ]);
+           
+    $firebase->sendRequestActionToTechnician($item);
 
     return $this->response(new RequestResource($item->fresh()));
 }
 
-    public function rejectEstimate(HttpRequest $request, $id)
+    public function rejectEstimate(HttpRequest $request, $id, FirebaseNotificationService $firebase)
     {
         $item = $request->user()
             ->createdRequests()
@@ -83,11 +86,12 @@ class RequestController extends Controller
             'rejected_at' => now(),
         ]);
 
+        $firebase->sendRequestActionToTechnician($item);
         return $this->response(new RequestResource($item->fresh()));
     }
     
 
-  public function approveFinalPrice(HttpRequest $request, $id)
+    public function approveFinalPrice(HttpRequest $request, $id, FirebaseNotificationService $firebase)
 {
     $item = $request->user()
         ->createdRequests()
@@ -101,11 +105,11 @@ class RequestController extends Controller
     $item->update([
         'status' => 'processing',
     ]);
-
+    $firebase->sendRequestActionToTechnician($item);
     return $this->response(new RequestResource($item->fresh()->load('additions')));
 }
 
-public function rejectFinalPrice(HttpRequest $request, $id)
+public function rejectFinalPrice(HttpRequest $request, $id, FirebaseNotificationService $firebase)
 {
     $item = $request->user()
         ->createdRequests()
@@ -120,6 +124,7 @@ public function rejectFinalPrice(HttpRequest $request, $id)
         'cancellation_reason' => 'Final approval rejected by tenant',
         'cancelled_at' => now(),
     ]);
+    $firebase->sendRequestStatusNotification($item);
 
     return $this->response(new RequestResource($item->fresh()));
 }
