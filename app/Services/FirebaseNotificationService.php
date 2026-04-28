@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Request as MaintenanceRequest;
+use App\Models\Request as WorkRequest;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
@@ -41,7 +41,10 @@ class FirebaseNotificationService
         }
     }
 
-    public function sendRequestStatusNotification(MaintenanceRequest $request): ?array
+    /**
+     * إشعارات تُرسل إلى العميل عند تغيّر الحالة من جهة الفني.
+     */
+    public function sendRequestStatusNotification(WorkRequest $request): ?array
     {
         $request->loadMissing('tenant');
 
@@ -51,37 +54,83 @@ class FirebaseNotificationService
 
         [$title, $body] = match ($request->status) {
             'estimate_price' => [
-                'New Estimate',
-                'A price estimate has been sent for your request.'
+                'تم إرسال السعر التقديري',
+                'تم إرسال السعر التقديري لطلبك.',
             ],
             'processing' => [
-                'Maintenance Started',
-                'The technician has started working on your request.'
+                'بدأت الصيانة',
+                'تم بدء العمل على طلبك.',
             ],
             'awaiting_final_approval' => [
-                'Approval Needed',
-                'Additional costs were added and your approval is required.'
+                'موافقة مطلوبة',
+                'تمت إضافة تكاليف إضافية ويُرجى مراجعتها والموافقة عليها.',
             ],
             'completed' => [
-                'Request Completed',
-                'Your maintenance request has been completed.'
+                'اكتمل الطلب',
+                'تم الانتهاء من طلب الصيانة الخاص بك.',
             ],
             'cancelled' => [
-                'Request Cancelled',
-                'Your request has been cancelled.'
+                'تم إلغاء الطلب',
+                'تم إلغاء طلب الصيانة الخاص بك.',
             ],
             'rejected' => [
-                'Estimate Rejected',
-                'Your estimate has been rejected.'
+                'تم رفض الطلب',
+                'تم رفض الطلب أو السعر التقديري الخاص به.',
             ],
             default => [
-                'Request Updated',
-                'Your request status has been updated.'
+                'تحديث على الطلب',
+                'تم تحديث حالة طلبك.',
             ],
         };
 
         return $this->sendToToken(
             token: $request->tenant->fcm_token,
+            title: $title,
+            body: $body,
+            data: [
+                'type' => 'request_status_update',
+                'request_id' => $request->id,
+                'status' => $request->status,
+            ]
+        );
+    }
+
+    /**
+     * إشعارات تُرسل إلى الفني عند قيام العميل بإجراء على الطلب.
+     */
+    public function sendRequestActionToTechnician(WorkRequest $request): ?array
+    {
+        $request->loadMissing('technician');
+
+        if (!$request->technician || !$request->technician->fcm_token) {
+            return null;
+        }
+
+        [$title, $body] = match ($request->status) {
+            'confirmed' => [
+                'تمت الموافقة على السعر',
+                'قام العميل بالموافقة على السعر التقديري للطلب.',
+            ],
+            'rejected' => [
+                'تم رفض السعر التقديري',
+                'قام العميل برفض السعر التقديري للطلب.',
+            ],
+            'processing' => [
+                'تمت الموافقة على الإضافات',
+                'قام العميل بالموافقة على التكاليف الإضافية ويمكن متابعة التنفيذ.',
+            ],
+            'cancelled' => [
+                'تم إلغاء الطلب',
+                'قام العميل برفض التكاليف الإضافية وتم إلغاء الطلب.',
+            ],
+            default => [
+                'تحديث على الطلب',
+                'تم إجراء تحديث جديد على الطلب.',
+            ],
+        };
+
+        return $this->sendToToken(
+            token: $request->technician->fcm_token,
             title: $title,
             body: $body,
             data: [
