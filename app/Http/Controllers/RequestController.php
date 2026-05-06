@@ -8,12 +8,15 @@ use App\Http\Resources\RequestResource;
 use App\Models\Request as WorkRequest;
 use App\Services\FirebaseNotificationService;
 use Illuminate\Http\Request as HttpRequest; 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 class RequestController extends Controller
 {
     public function index(HttpRequest $request)
     {
          $items = $request->user()             // يتطلب توكن صالح
             ->createdRequests()
+            ->with('media')
             ->latest()
             ->get();
         return $this->response(RequestResource::collection($items));
@@ -27,12 +30,38 @@ class RequestController extends Controller
     }
 
 
-    public function store(StoreRequestForm $request)
+ public function store(StoreRequestForm $request)
 {
-    $item = $request->user()->createdRequests()->create($request->validated());
-    $item->refresh();
+    DB::beginTransaction();
 
-    return $this->response(new RequestResource($item), 'success', 201);
+    try {
+        $data = $request->validated();
+
+//هنا يتم حذف جدول الميديا من مصفوفة البيانات والسبب انو جدول الريكويست لا يحتوي على عمو اسمو الاميجيز
+        unset($data['images']);
+
+        $item = $request->user()->createdRequests()->create($data);
+
+        foreach ($request->file('images', []) as $image) {
+            $path = $image->store("requests/{$item->id}/before", 'public');
+
+            $item->media()->create([
+                'type' => 'before',
+                'url'  => asset(Storage::url($path)),
+            ]);
+        }
+
+        DB::commit();
+
+        $item->refresh()->load('media');
+
+        return $this->response(new RequestResource($item), 'success', 201);
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
+        return $this->response(null, $e->getMessage(), 500);
+    }
 }
 
       public function update(UpdateRequestForm $request, $id)

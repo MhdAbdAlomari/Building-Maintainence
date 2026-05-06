@@ -29,6 +29,8 @@ class StoreRequestForm extends FormRequest
         'scheduled_date' => ['required', 'date', 'after_or_equal:today'],
         'scheduled_time' => ['required', 'date_format:H:i'],
 
+         'images' => ['nullable', 'array', 'max:3'],
+        'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
 
 
         
