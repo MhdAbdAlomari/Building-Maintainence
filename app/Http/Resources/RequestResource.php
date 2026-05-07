@@ -38,6 +38,7 @@ class RequestResource extends JsonResource
             'can_pay' => $this->status === 'completed'
                 && !empty($this->final_price_syp)
                 && !$this->is_paid,
+            'media' => MediaResource::collection($this->whenLoaded('media')),
         ];
     }
 }

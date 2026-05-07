@@ -3,16 +3,18 @@
 namespace App\Services;
 
 use App\Models\Request as WorkRequest;
-use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
 use Throwable;
 
 class FirebaseNotificationService
 {
-    public function __construct(
-        protected Messaging $messaging
-    ) {}
+    protected $messaging;
+
+    public function __construct()
+    {
+        $this->messaging = app('firebase.messaging');
+    }
 
     public function sendToToken(
         string $token,
@@ -41,9 +43,6 @@ class FirebaseNotificationService
         }
     }
 
-    /**
-     * إشعارات تُرسل إلى العميل عند تغيّر الحالة من جهة الفني.
-     */
     public function sendRequestStatusNotification(WorkRequest $request): ?array
     {
         $request->loadMissing('tenant');
@@ -95,9 +94,6 @@ class FirebaseNotificationService
         );
     }
 
-    /**
-     * إشعارات تُرسل إلى الفني عند قيام العميل بإجراء على الطلب.
-     */
     public function sendRequestActionToTechnician(WorkRequest $request): ?array
     {
         $request->loadMissing('technician');

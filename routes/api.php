@@ -94,7 +94,7 @@ Route::middleware(['auth:sanctum','role:technician'])->group(function () {
     });
 
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum','role:tenant,technician'])->group(function () {
     // قائمة صور الطلب
     Route::get('/requests/{id}/media', [MediaController::class, 'index']);
     // رفع صورة (قبل/بعد)

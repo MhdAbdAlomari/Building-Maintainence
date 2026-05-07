@@ -10,7 +10,7 @@ class ServiceController extends Controller
 {
     public function index()
     {
-        // خفيف وواضح – ترتيب أبجدي
+       
         $items = Service::orderBy('name')->get();
 
         return $this->response(ServiceResource::collection($items));

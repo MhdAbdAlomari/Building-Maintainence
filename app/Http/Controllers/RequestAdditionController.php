@@ -17,7 +17,7 @@ class RequestAdditionController extends Controller
         $user = $request->user();
 
         $workRequest = WorkRequest::where('id', $requestId)
-            ->where('technician_id', $user->id)
+            // ->where('technician_id', $user->id)
             ->with('additions')
             ->firstOrFail();
 
