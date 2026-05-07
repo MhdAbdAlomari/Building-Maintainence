@@ -13,6 +13,7 @@ class Request extends Model
     protected $guarded = ['id', 'created_at', 'updated_at'];
 
     protected $casts = [
+        'additions_approved' => 'boolean',
         'is_paid' => 'boolean',
         'paid_at' => 'datetime',
         'cancelled_at' => 'datetime',

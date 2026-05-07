@@ -33,7 +33,7 @@ class StoreRequestForm extends FormRequest
         'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
 
 
-        
+        'additions_approved' => ['prohibited'],
         'tenant_id' => ['prohibited'],
         'technician_id' => ['prohibited'],
         'status' => ['prohibited'],

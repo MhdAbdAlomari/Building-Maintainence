@@ -29,6 +29,7 @@ class UpdateRequestForm extends FormRequest
             'scheduled_date' => ['required', 'date', 'after_or_equal:today'],
             'scheduled_time' => ['required', 'date_format:H:i'],
 
+            'additions_approved' => ['prohibited'],
             'tenant_id' => ['prohibited'],
             'technician_id' => ['prohibited'],
             'status' => ['prohibited'],

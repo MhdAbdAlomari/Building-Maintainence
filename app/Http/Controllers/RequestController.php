@@ -133,6 +133,7 @@ class RequestController extends Controller
 
     $item->update([
         'status' => 'processing',
+        'additions_approved' => true,
     ]);
     $firebase->sendRequestActionToTechnician($item);
     return $this->response(new RequestResource($item->fresh()->load('additions')));
@@ -152,6 +153,8 @@ public function rejectFinalPrice(HttpRequest $request, $id, FirebaseNotification
         'status' => 'cancelled',
         'cancellation_reason' => 'Final approval rejected by tenant',
         'cancelled_at' => now(),
+         'additions_approved' => false,
+
     ]);
     $firebase->sendRequestStatusNotification($item);
 

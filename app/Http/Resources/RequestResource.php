@@ -28,6 +28,10 @@ class RequestResource extends JsonResource
             'estimate_note' => $this->estimate_note,
 
             'final_approval_requested_at' => $this->final_approval_requested_at,
+
+            'additions_approved' => (bool) $this->additions_approved,
+
+            'can_add_additions' => $this->status === 'processing' && !$this->additions_approved,
             
             'final_price_syp' => $this->final_price_syp,
             'final_price_syp_label' => $this->final_price_syp
@@ -39,6 +43,7 @@ class RequestResource extends JsonResource
                 && !empty($this->final_price_syp)
                 && !$this->is_paid,
             'media' => MediaResource::collection($this->whenLoaded('media')),
+            
         ];
     }
 }

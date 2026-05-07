@@ -46,6 +46,9 @@ class RequestAdditionController extends Controller
             'additions.*.name' => ['required', 'string', 'max:191'],
             'additions.*.price_syp' => ['required', 'integer', 'min:1'],
         ]);
+         if ($request->additions_approved) {
+        return $this->response(null, 'Additional costs have already been approved and cannot be added again', 422);
+    }
 
         $workRequest->additions()->delete();
 
