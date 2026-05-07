@@ -22,6 +22,7 @@ class TechnicianRequestController extends Controller
             ->where('status', 'pending')
             ->whereNull('technician_id')
             ->latest()
+            ->with('media')
             ->get();
 
         return $this->response(RequestResource::collection($items));
@@ -70,6 +71,7 @@ class TechnicianRequestController extends Controller
                   ->where('technician_id', Auth::id());
         })
         ->latest()
+        ->with('media')
         ->get();
 
     return $this->response(RequestResource::collection($items));
