@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\DashboardTechnicianResource;
 use App\Http\Resources\RequestResource;
 use App\Models\Request as WorkRequest;
 use App\Services\FirebaseNotificationService;
@@ -216,4 +217,37 @@ class TechnicianRequestController extends Controller
         $firebase->sendRequestStatusNotification($item);
         return $this->response(new RequestResource($item->fresh()->load('additions')));
     }
+   public function dashboardCount(HttpRequest $request)
+{
+    $technician = $request->user();
+
+    $statuses = [
+        'estimate_price',
+        'confirmed',
+        'processing',
+        'awaiting_final_approval',
+        'completed',
+        'rejected',
+        'cancelled',
+    ];
+
+    $counts = WorkRequest::selectRaw('status, COUNT(*) as total')
+        ->where('technician_id', $technician->id)
+        ->whereIn('status', $statuses)
+        ->groupBy('status')
+        ->pluck('total', 'status');
+
+    $data = [
+        'pending' => WorkRequest::where('status', 'pending')
+            ->whereNull('technician_id')
+            ->count(),
+    ];
+
+    foreach ($statuses as $status) {
+        $data[$status] = $counts[$status] ?? 0;//هنا يتم المرور على كل حالة داخل المصفوفة 
+                                               //ثم يتم وضع العدد واذا لم تكن هناك عدد يتم وضع صفر
+    }
+
+    return $this->response($data, 'success');
+}
 }
