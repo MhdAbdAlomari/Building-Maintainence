@@ -7,72 +7,111 @@ use App\Http\Requests\UpdateRequestForm;
 use App\Http\Resources\RequestResource;
 use App\Models\Request as WorkRequest;
 use App\Services\FirebaseNotificationService;
-use Illuminate\Http\Request as HttpRequest; 
+use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+
 class RequestController extends Controller
 {
     public function index(HttpRequest $request)
     {
-         $items = $request->user()             // يتطلب توكن صالح
+        $items = $request->user()             // يتطلب توكن صالح
             ->createdRequests()
             ->with('media')
             ->latest()
             ->get();
         return $this->response(RequestResource::collection($items));
     }
-    
+
     public function show(HttpRequest $request, $id)
     {
         $item = $request->user()->createdRequests()->findOrFail($id);
         return $this->response(new RequestResource($item));
-        
     }
 
 
- public function store(StoreRequestForm $request)
-{
-    DB::beginTransaction();
+    public function store(StoreRequestForm $request)
+    {
+        DB::beginTransaction();
 
-    try {
-        $data = $request->validated();
+        try {
+            $data = $request->validated();
 
-//هنا يتم حذف جدول الميديا من مصفوفة البيانات والسبب انو جدول الريكويست لا يحتوي على عمو اسمو الاميجيز
-        unset($data['images']);
+            //هنا يتم حذف جدول الميديا من مصفوفة البيانات والسبب انو جدول الريكويست لا يحتوي على عمو اسمو الاميجيز
+            unset($data['images']);
 
-        $item = $request->user()->createdRequests()->create($data);
+            $item = $request->user()->createdRequests()->create($data);
 
-        foreach ($request->file('images', []) as $image) {
-            $path = $image->store("requests/{$item->id}/before", 'public');
+            foreach ($request->file('images', []) as $image) {
+                $path = $image->store("requests/{$item->id}/before", 'public');
 
-            $item->media()->create([
-                'type' => 'before',
-                'url'  => asset(Storage::url($path)),
-            ]);
+                $item->media()->create([
+                    'type' => 'before',
+                    'url'  => asset(Storage::url($path)),
+                ]);
+            }
+
+            DB::commit();
+
+            $item->refresh()->load('media');
+
+            return $this->response(new RequestResource($item), 'success', 201);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return $this->response(null, $e->getMessage(), 500);
         }
-
-        DB::commit();
-
-        $item->refresh()->load('media');
-
-        return $this->response(new RequestResource($item), 'success', 201);
-
-    } catch (\Throwable $e) {
-        DB::rollBack();
-
-        return $this->response(null, $e->getMessage(), 500);
     }
-}
 
-      public function update(UpdateRequestForm $request, $id)
-{
-    $item = $request->user()->createdRequests()->findOrFail($id);
-    $item->update($request->validated());
+    public function update(UpdateRequestForm $request, $id)
+    {
+        DB::beginTransaction();
 
-    return $this->response(new RequestResource($item));
-}
+        try {
+            $item = $request->user()->createdRequests()->findOrFail($id);
 
-    public function destroy(HttpRequest $request,$id) 
+            $data = $request->validated();
+
+            unset($data['images']);
+
+            $item->update($data);
+
+            if ($request->hasFile('images')) {
+                $oldBeforeMedia = $item->media()
+                    ->where('type', 'before')
+                    ->get();
+
+                foreach ($oldBeforeMedia as $media) {
+                    $path = str_replace('/storage/', '', $media->url);
+
+                    Storage::disk('public')->delete($path);
+
+                    $media->delete();
+                }
+
+                foreach ($request->file('images', []) as $image) {
+                    $path = $image->store("requests/{$item->id}/before", 'public');
+
+                    $item->media()->create([
+                        'type' => 'before',
+                        'url'  => Storage::url($path),
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            $item->refresh()->load('media');
+
+            return $this->response(new RequestResource($item), 'success');
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return $this->response(null, $e->getMessage(), 500);
+        }
+    }
+
+    public function destroy(HttpRequest $request, $id)
     {
         $item = $request->user()->createdRequests()->findOrFail($id);
         $item->delete();
@@ -81,24 +120,24 @@ class RequestController extends Controller
 
 
     public function confirmEstimate(HttpRequest $request, $id, FirebaseNotificationService $firebase)
-{
-    $item = $request->user()
-        ->createdRequests()
-        ->findOrFail($id);
+    {
+        $item = $request->user()
+            ->createdRequests()
+            ->findOrFail($id);
 
-    if ($item->status !== 'estimate_price') {
-        return $this->response(null, 'Only estimated requests can be confirmed', 422);
+        if ($item->status !== 'estimate_price') {
+            return $this->response(null, 'Only estimated requests can be confirmed', 422);
+        }
+
+        $item->update([
+            'status' => 'confirmed',
+            'confirmed_at' => now(),
+        ]);
+
+        $firebase->sendRequestActionToTechnician($item);
+
+        return $this->response(new RequestResource($item->fresh()));
     }
-
-    $item->update([
-        'status' => 'confirmed',
-        'confirmed_at' => now(),
-    ]);
-           
-    $firebase->sendRequestActionToTechnician($item);
-
-    return $this->response(new RequestResource($item->fresh()));
-}
 
     public function rejectEstimate(HttpRequest $request, $id, FirebaseNotificationService $firebase)
     {
@@ -118,46 +157,46 @@ class RequestController extends Controller
         $firebase->sendRequestActionToTechnician($item);
         return $this->response(new RequestResource($item->fresh()));
     }
-    
+
 
     public function approveFinalPrice(HttpRequest $request, $id, FirebaseNotificationService $firebase)
-{
-    $item = $request->user()
-        ->createdRequests()
-        ->with('additions')
-        ->findOrFail($id);
+    {
+        $item = $request->user()
+            ->createdRequests()
+            ->with('additions')
+            ->findOrFail($id);
 
-    if ($item->status !== 'awaiting_final_approval') {
-        return $this->response(null, 'Only requests awaiting final approval can be approved', 422);
+        if ($item->status !== 'awaiting_final_approval') {
+            return $this->response(null, 'Only requests awaiting final approval can be approved', 422);
+        }
+
+        $item->update([
+            'status' => 'processing',
+            'additions_approved' => true,
+        ]);
+        $firebase->sendRequestActionToTechnician($item);
+        return $this->response(new RequestResource($item->fresh()->load('additions')));
     }
 
-    $item->update([
-        'status' => 'processing',
-        'additions_approved' => true,
-    ]);
-    $firebase->sendRequestActionToTechnician($item);
-    return $this->response(new RequestResource($item->fresh()->load('additions')));
-}
+    public function rejectFinalPrice(HttpRequest $request, $id, FirebaseNotificationService $firebase)
+    {
+        $item = $request->user()
+            ->createdRequests()
+            ->findOrFail($id);
 
-public function rejectFinalPrice(HttpRequest $request, $id, FirebaseNotificationService $firebase)
-{
-    $item = $request->user()
-        ->createdRequests()
-        ->findOrFail($id);
+        if ($item->status !== 'awaiting_final_approval') {
+            return $this->response(null, 'Only requests awaiting final approval can be rejected', 422);
+        }
 
-    if ($item->status !== 'awaiting_final_approval') {
-        return $this->response(null, 'Only requests awaiting final approval can be rejected', 422);
+        $item->update([
+            'status' => 'cancelled',
+            'cancellation_reason' => 'Final approval rejected by tenant',
+            'cancelled_at' => now(),
+            'additions_approved' => false,
+
+        ]);
+        $firebase->sendRequestStatusNotification($item);
+
+        return $this->response(new RequestResource($item->fresh()));
     }
-
-    $item->update([
-        'status' => 'cancelled',
-        'cancellation_reason' => 'Final approval rejected by tenant',
-        'cancelled_at' => now(),
-         'additions_approved' => false,
-
-    ]);
-    $firebase->sendRequestStatusNotification($item);
-
-    return $this->response(new RequestResource($item->fresh()));
-}
 }

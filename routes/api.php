@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminTechnicianDetailController;
 use App\Http\Controllers\AdminRequestController;
 use App\Http\Controllers\AdminServiceController;
 use App\Http\Controllers\AdminRegionController;
+use App\Http\Controllers\BannerController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NotificationTokenController;
 use App\Http\Controllers\RegionController;
@@ -43,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // routes/api.php
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('requests', RequestController::class);
+    Route::post('requests/{id}/update',[RequestController::class,'update']);
 });
    Route::middleware(['auth:sanctum', 'role:tenant']) 
    ->prefix('tenant/requests')
@@ -161,6 +163,9 @@ Route::middleware(['auth:sanctum','role:admin'])
     Route::middleware('auth:sanctum')->post('/save-fcm-token', [NotificationTokenController::class, 'store']);
     //test
     Route::middleware('auth:sanctum')->post('/test-firebase-notification', [TestFirebaseNotificationController::class, 'send']);
+
+    //banners
+    Route::get('banners',[BannerController::class,'index']);
 
 
 
