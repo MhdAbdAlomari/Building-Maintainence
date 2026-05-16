@@ -72,7 +72,7 @@ class TechnicianRequestController extends Controller
                   ->where('technician_id', Auth::id());
         })
         ->latest()
-        ->with('media')
+        ->with(['media','tenant'])
         ->get();
 
     return $this->response(RequestResource::collection($items));

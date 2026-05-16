@@ -77,7 +77,7 @@ class UserController extends Controller
                 'email'     => $user->email,
                 'phone'     => $user->phone,
                 'role'      => $user->role,
-                'address'   => $user->address,
+                'address'   => $user->addresses,
                 'region_id' => $user->region_id,
             ],
         ]);

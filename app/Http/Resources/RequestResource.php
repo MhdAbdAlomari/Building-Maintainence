@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Filament\Resources\UserResource;
+use App\Http\Resources\UserResource as ResourcesUserResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Carbon;
 
@@ -43,7 +45,7 @@ class RequestResource extends JsonResource
                 && !empty($this->final_price_syp)
                 && !$this->is_paid,
             'media' => MediaResource::collection($this->whenLoaded('media')),
-            
+            'tenant'=>  new ResourcesUserResource($this->whenLoaded('tenant')),
         ];
     }
 }
