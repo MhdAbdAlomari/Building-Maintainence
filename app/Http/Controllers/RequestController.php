@@ -17,7 +17,7 @@ class RequestController extends Controller
     {
         $items = $request->user()             // يتطلب توكن صالح
             ->createdRequests()
-            ->with('media')
+            ->with(['media','tenant'])
             ->latest()
             ->get();
         return $this->response(RequestResource::collection($items));
@@ -26,6 +26,7 @@ class RequestController extends Controller
     public function show(HttpRequest $request, $id)
     {
         $item = $request->user()->createdRequests()->findOrFail($id);
+        $item->refresh()->load(['media','tenant']);
         return $this->response(new RequestResource($item));
     }
 
@@ -52,8 +53,9 @@ class RequestController extends Controller
             }
 
             DB::commit();
+         //   $item->refresh()->load('user');
 
-            $item->refresh()->load('media');
+            $item->refresh()->load(['media','tenant']);
 
             return $this->response(new RequestResource($item), 'success', 201);
         } catch (\Throwable $e) {
@@ -73,6 +75,9 @@ class RequestController extends Controller
             $data = $request->validated();
 
             unset($data['images']);
+            if ($item->status !== 'pending') {
+                return $this->response(null, 'You can update the request only while it is pending', 422);
+            }
 
             $item->update($data);
 
@@ -101,7 +106,7 @@ class RequestController extends Controller
 
             DB::commit();
 
-            $item->refresh()->load('media');
+            $item->refresh()->load(['media','tenant']);
 
             return $this->response(new RequestResource($item), 'success');
         } catch (\Throwable $e) {

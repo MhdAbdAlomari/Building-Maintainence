@@ -6,6 +6,7 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -70,17 +71,7 @@ class UserController extends Controller
     public function profile(Request $request)
     {
         $user=$request->user();
-        return response()->json([
-            'user' => [
-                'id'        => $user->id,
-                'name'      => $user->name,
-                'email'     => $user->email,
-                'phone'     => $user->phone,
-                'role'      => $user->role,
-                'address'   => $user->address,
-                'region_id' => $user->region_id,
-            ],
-        ]);
+        return $this->response(new UserResource($user),'success',200);
     }
     public function updateProfile(UpdateProfileRequest $request)
     {
