@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable,HasApiTokens;
@@ -98,6 +99,8 @@ class User extends Authenticatable
         return $this->hasMany(Payment::class,'tenant_id');
     }
 
-
-    
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class, 'technician_id');
+    }
 }

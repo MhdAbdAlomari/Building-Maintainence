@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $app->make\\(Illuminate\\\\Contracts\\\\Console\\\\Kernel::class\\)->bootstrap\\(\\); foreach \\([App\\\\Filament\\\\Widgets\\\\RequestStats::class, App\\\\Filament\\\\Widgets\\\\RequestsPerMonthChart::class, App\\\\Filament\\\\Widgets\\\\RequestsByStatusChart::class, App\\\\Filament\\\\Widgets\\\\MonthlyRevenueChart::class, App\\\\Filament\\\\Widgets\\\\RequestsByServiceChart::class, App\\\\Filament\\\\Resources\\\\PaymentResource\\\\Pages\\\\PaymentStats::class] as $c\\) { class_exists\\($c\\) ? print\\($c.'\\\\'': OK'\\\\''.PHP_EOL\\) : print\\($c.'\\\\'': MISSING'\\\\''.PHP_EOL\\); }')",
+      "Bash(grep -E \"\\\\.php$\")",
+      "Bash(php -l app/Providers/Filament/AdminPanelProvider.php)",
+      "Bash(php -l app/Filament/Pages/Dashboard.php)",
+      "Bash(php -l app/Filament/Widgets/RequestStats.php)",
+      "Bash(php -l app/Filament/Widgets/RequestsPerMonthChart.php)",
+      "Bash(php -l app/Filament/Widgets/MonthlyRevenueChart.php)"
+    ]
+  }
+}

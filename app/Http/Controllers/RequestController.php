@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreRequestForm;
 use App\Http\Requests\UpdateRequestForm;
 use App\Http\Resources\RequestResource;
+use App\Models\Address;
 use App\Models\Request as WorkRequest;
+use App\Models\TechnicianDetail;
 use App\Services\FirebaseNotificationService;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +38,21 @@ class RequestController extends Controller
 
         try {
             $data = $request->validated();
+
+            $address = Address::find($data['address_id']);
+
+            if (!TechnicianDetail::hasNearbyTechnician(
+                (float) $address->latitude,
+                (float) $address->longitude,
+                (int) $data['service_id']
+            )) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No technicians are available in your area for this service. Please try again later.',
+                    'message_ar' => 'لا يوجد فنيين متاحين في منطقتك لهذه الخدمة. يرجى المحاولة لاحقاً.',
+                    'data' => null,
+                ], 422);
+            }
 
             //هنا يتم حذف جدول الميديا من مصفوفة البيانات والسبب انو جدول الريكويست لا يحتوي على عمو اسمو الاميجيز
             unset($data['images']);

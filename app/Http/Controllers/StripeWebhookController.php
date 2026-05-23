@@ -39,16 +39,16 @@ class StripeWebhookController extends Controller
                     'stripe_payment_intent_id' => $session->payment_intent ?? null,
                 ]);
 
-               $payment->workRequest()->update([
-                'is_paid' => true,
-                'paid_at' => now(),
-            ]);
+                $workRequest = $payment->workRequest;
+                $workRequest->update([
+                    'is_paid' => true,
+                    'paid_at' => now(),
+                ]);
 
+                PaymentController::creditTechnicianWallet($workRequest);
             }
         }
 
         return response('OK', 200);
     }
 }
-
-

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\DashboardTechnicianResource;
 use App\Http\Resources\RequestResource;
 use App\Models\Request as WorkRequest;
+use App\Models\TechnicianDetail;
 use App\Services\FirebaseNotificationService;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\Auth;
@@ -19,11 +20,44 @@ class TechnicianRequestController extends Controller
      */
     public function availableRequests(HttpRequest $request)
     {
+        $user = $request->user();
+
+        $detail = TechnicianDetail::where('user_id', $user->id)->first();
+
+        if (!$detail) {
+            return $this->response([], 'Technician profile not found. Please contact admin.', 422);
+        }
+
+        $defaultAddress = $user->addresses()
+            ->where('is_default', true)
+            ->first();
+
+        if (!$defaultAddress) {
+            return $this->response([], 'Please set a default address to see available requests');
+        }
+
+        if (is_null($detail->max_distance_km)) {
+            return $this->response([], 'Please set your max distance to see available requests');
+        }
+
+        $techLat = $defaultAddress->latitude;
+        $techLng = $defaultAddress->longitude;
+        $maxDistance = $detail->max_distance_km;
+        $serviceId = $detail->service_id;
+
+        $haversine = TechnicianDetail::haversineSQL();
+
         $items = WorkRequest::query()
-            ->where('status', 'pending')
-            ->whereNull('technician_id')
-            ->latest()
-            ->with('media')
+            ->select('requests.*')
+            ->selectRaw("{$haversine} AS distance_km", [$techLat, $techLng, $techLat])
+            ->join('addresses', 'requests.address_id', '=', 'addresses.id')
+            ->where('requests.status', 'pending')
+            ->whereNull('requests.technician_id')
+            ->whereNotNull('requests.address_id')
+            ->where('requests.service_id', $serviceId)
+            ->whereRaw("{$haversine} <= ?", [$techLat, $techLng, $techLat, $maxDistance])
+            ->orderBy('distance_km', 'asc')
+            ->with(['media', 'address'])
             ->get();
 
         return $this->response(RequestResource::collection($items));
@@ -37,46 +71,87 @@ class TechnicianRequestController extends Controller
         $user = $request->user();
 
         $item = WorkRequest::where('id', $id)
-            ->where('technician_id', $user->id) // أضمن أن الطلب يخص هذا الفني
+            ->where('technician_id', $user->id)
             ->firstOrFail();
 
         return $this->response(new RequestResource($item));
     }
 
-    public function getByStatus($status)
-{
-    $allowedStatuses = [
-        'pending',
-        'estimate_price',
-        'confirmed',
-        'processing',
-        'awaiting_final_approval',
-        'completed',
-        'cancelled',
-        'rejected',
-    ];
+    public function getByStatus(HttpRequest $request, $status)
+    {
+        $allowedStatuses = [
+            'pending',
+            'estimate_price',
+            'confirmed',
+            'processing',
+            'awaiting_final_approval',
+            'completed',
+            'cancelled',
+            'rejected',
+        ];
 
-    if (!in_array($status, $allowedStatuses)) {
-        return $this->response([
-            'message' => 'Invalid status value'
-        ], 422);
+        if (!in_array($status, $allowedStatuses)) {
+            return $this->response([], 'Invalid status value', 422);
+        }
+
+        if ($status === 'pending') {
+            return $this->getPendingRequests($request);
+        }
+
+        $items = WorkRequest::query()
+            ->where('status', $status)
+            ->where('technician_id', Auth::id())
+            ->latest()
+            ->with(['media', 'tenant', 'address'])
+            ->get();
+
+        return $this->response(RequestResource::collection($items));
     }
 
-    $items = WorkRequest::query()
-        ->when($status === 'pending', function ($query) {
-            $query->where('status', 'pending')
-                  ->whereNull('technician_id');
-        })
-        ->when($status !== 'pending', function ($query) use ($status) {
-            $query->where('status', $status)
-                  ->where('technician_id', Auth::id());
-        })
-        ->latest()
-        ->with(['media','tenant','address'])
-        ->get();
+    private function getPendingRequests(HttpRequest $request)
+    {
+        $user = $request->user();
 
-    return $this->response(RequestResource::collection($items));
-}
+        $detail = TechnicianDetail::where('user_id', $user->id)->first();
+
+        if (!$detail) {
+            return $this->response([], 'Technician profile not found. Please contact admin.', 422);
+        }
+
+        $defaultAddress = $user->addresses()
+            ->where('is_default', true)
+            ->first();
+
+        if (!$defaultAddress) {
+            return $this->response([], 'Please set a default address to see available requests');
+        }
+
+        if (is_null($detail->max_distance_km)) {
+            return $this->response([], 'Please set your max distance to see available requests');
+        }
+
+        $techLat = $defaultAddress->latitude;
+        $techLng = $defaultAddress->longitude;
+        $maxDistance = $detail->max_distance_km;
+        $serviceId = $detail->service_id;
+
+        $haversine = TechnicianDetail::haversineSQL();
+
+        $items = WorkRequest::query()
+            ->select('requests.*')
+            ->selectRaw("{$haversine} AS distance_km", [$techLat, $techLng, $techLat])
+            ->join('addresses', 'requests.address_id', '=', 'addresses.id')
+            ->where('requests.status', 'pending')
+            ->whereNull('requests.technician_id')
+            ->whereNotNull('requests.address_id')
+            ->where('requests.service_id', $serviceId)
+            ->whereRaw("{$haversine} <= ?", [$techLat, $techLng, $techLat, $maxDistance])
+            ->orderBy('distance_km', 'asc')
+            ->with(['media', 'tenant', 'address'])
+            ->get();
+
+        return $this->response(RequestResource::collection($items));
+    }
 
     
 

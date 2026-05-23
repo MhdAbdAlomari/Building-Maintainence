@@ -17,7 +17,9 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RequestAdditionController;
 use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\TechnicianProfileController;
 use App\Http\Controllers\TestFirebaseNotificationController;
+use App\Http\Controllers\WalletController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -63,6 +65,13 @@ Route::middleware(['auth:sanctum','role:technician'])->group(function () {
     Route::get ('/technician-details', [TechnicianDetailController::class, 'index']);
     Route::patch('/technician-details', [TechnicianDetailController::class, 'update']);
 });
+
+Route::middleware(['auth:sanctum', 'role:technician'])
+    ->prefix('technician/profile')
+    ->group(function () {
+        Route::get('/setup-status', [TechnicianProfileController::class, 'setupStatus']);
+        Route::patch('/max-distance', [TechnicianProfileController::class, 'updateMaxDistance']);
+    });
 
     Route::get('/services', [ServiceController::class, 'index']);
     Route::get('/regions',  [RegionController::class, 'index']);
@@ -163,6 +172,14 @@ Route::middleware(['auth:sanctum','role:admin'])
     Route::middleware('auth:sanctum')->post('/save-fcm-token', [NotificationTokenController::class, 'store']);
     //test
     Route::middleware('auth:sanctum')->post('/test-firebase-notification', [TestFirebaseNotificationController::class, 'send']);
+
+    // Technician Wallet
+    Route::middleware(['auth:sanctum', 'role:technician'])
+        ->prefix('technician/wallet')
+        ->group(function () {
+            Route::get('/balance', [WalletController::class, 'balance']);
+            Route::get('/transactions', [WalletController::class, 'transactions']);
+        });
 
     //banners
     Route::get('banners',[BannerController::class,'index']);
