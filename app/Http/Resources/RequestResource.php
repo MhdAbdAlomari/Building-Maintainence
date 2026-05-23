@@ -48,6 +48,10 @@ class RequestResource extends JsonResource
             'can_pay' => $this->status === 'completed'
                 && !empty($this->final_price_syp)
                 && !$this->is_paid,
+            'distance_km' => $this->when(
+                array_key_exists('distance_km', $this->resource->getAttributes()),
+                fn() => round((float) $this->distance_km, 1)
+            ),
             'media' => MediaResource::collection($this->whenLoaded('media')),
             'address' => new AddressResource($this->whenLoaded('address')),
             'tenant'=>  new ResourcesUserResource($this->whenLoaded('tenant')),

@@ -3,7 +3,8 @@
     "allow": [
       "Bash(Get-ChildItem -Path \"D:\\\\backend swift serve_local_github\\\\Building-Maintainence\" -Recurse -Directory)",
       "Bash(Select-Object -First 50)",
-      "Bash(Format-List FullName)"
+      "Bash(Format-List FullName)",
+      "Bash(php artisan *)"
     ]
   }
 }
