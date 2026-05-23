@@ -45,7 +45,7 @@ class TechnicianRequestController extends Controller
         $maxDistance = $detail->max_distance_km;
         $serviceId = $detail->service_id;
 
-        $haversine = "(6371 * ACOS(LEAST(1, COS(RADIANS(?)) * COS(RADIANS(addresses.latitude)) * COS(RADIANS(addresses.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(addresses.latitude)))))";
+        $haversine = TechnicianDetail::haversineSQL();
 
         $items = WorkRequest::query()
             ->select('requests.*')
@@ -71,7 +71,7 @@ class TechnicianRequestController extends Controller
         $user = $request->user();
 
         $item = WorkRequest::where('id', $id)
-            ->where('technician_id', $user->id) // أضمن أن الطلب يخص هذا الفني
+            ->where('technician_id', $user->id)
             ->firstOrFail();
 
         return $this->response(new RequestResource($item));
@@ -135,7 +135,7 @@ class TechnicianRequestController extends Controller
         $maxDistance = $detail->max_distance_km;
         $serviceId = $detail->service_id;
 
-        $haversine = "(6371 * ACOS(LEAST(1, COS(RADIANS(?)) * COS(RADIANS(addresses.latitude)) * COS(RADIANS(addresses.longitude) - RADIANS(?)) + SIN(RADIANS(?)) * SIN(RADIANS(addresses.latitude)))))";
+        $haversine = TechnicianDetail::haversineSQL();
 
         $items = WorkRequest::query()
             ->select('requests.*')
