@@ -45,6 +45,7 @@ class RequestResource extends JsonResource
                 && !empty($this->final_price_syp)
                 && !$this->is_paid,
             'media' => MediaResource::collection($this->whenLoaded('media')),
+            'address' => new AddressResource($this->whenLoaded('address')),
             'tenant'=>  new ResourcesUserResource($this->whenLoaded('tenant')),
         ];
     }
