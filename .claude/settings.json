@@ -8,7 +8,8 @@
       "Bash(php -l app/Filament/Widgets/RequestStats.php)",
       "Bash(php -l app/Filament/Widgets/RequestsPerMonthChart.php)",
       "Bash(php -l app/Filament/Widgets/MonthlyRevenueChart.php)",
-      "PowerShell(Copy-Item \"logo_app.png\" -Destination \"public/images/logo_app.png\" -Force)"
+      "PowerShell(Copy-Item \"logo_app.png\" -Destination \"public/images/logo_app.png\" -Force)",
+      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $app->make\\('\\\\''Illuminate\\\\Contracts\\\\Console\\\\Kernel'\\\\''\\)->bootstrap\\(\\); echo '\\\\''OK '\\\\''.\\\\App\\\\Filament\\\\Resources\\\\WithdrawalRequestResource::class.PHP_EOL;')"
     ]
   }
 }

@@ -20,6 +20,7 @@ use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TechnicianProfileController;
 use App\Http\Controllers\TestFirebaseNotificationController;
 use App\Http\Controllers\WalletController;
+use App\Http\Controllers\WithdrawalController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -179,6 +180,10 @@ Route::middleware(['auth:sanctum','role:admin'])
         ->group(function () {
             Route::get('/balance', [WalletController::class, 'balance']);
             Route::get('/transactions', [WalletController::class, 'transactions']);
+
+            Route::post('/withdraw', [WithdrawalController::class, 'store']);
+            Route::get('/withdrawals', [WithdrawalController::class, 'index']);
+            Route::delete('/withdrawals/{id}', [WithdrawalController::class, 'destroy']);
         });
 
     //banners
