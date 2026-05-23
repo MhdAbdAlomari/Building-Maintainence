@@ -20,7 +20,7 @@ class UserResource extends JsonResource
             'email'=>$this->email,
             'phone'=>$this->phone,
             'role'=>$this->role,
-            'address'=>$this->addresses
+            'address'=>$this->whenLoaded('addresses'),
         ];
     }
 }
