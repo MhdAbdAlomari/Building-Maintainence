@@ -52,6 +52,21 @@ class RequestResource extends Resource
         };
     }
 
+    public static function statusIcon(string $state): string
+    {
+        return match ($state) {
+            'pending'                 => 'heroicon-m-clock',
+            'estimate_price'          => 'heroicon-m-calculator',
+            'confirmed'               => 'heroicon-m-shield-check',
+            'processing'              => 'heroicon-m-arrow-path',
+            'awaiting_final_approval' => 'heroicon-m-eye',
+            'completed'               => 'heroicon-m-check-circle',
+            'rejected'                => 'heroicon-m-x-circle',
+            'cancelled'               => 'heroicon-m-no-symbol',
+            default                   => 'heroicon-m-question-mark-circle',
+        };
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -60,7 +75,7 @@ class RequestResource extends Resource
                 Forms\Components\Textarea::make('description')->rows(3)->required()->columnSpanFull(),
 
                 Forms\Components\Select::make('tenant_id')
-                    ->relationship('tenant', 'name', fn ($q) => $q->where('role', 'tenant'))
+                    ->relationship('tenant', 'name', fn (Builder $query) => $query->where('role', 'tenant'))
                     ->searchable()->preload()->required()
                     ->reactive()
                     ->afterStateUpdated(function (Set $set) {
@@ -86,7 +101,7 @@ class RequestResource extends Resource
                     ->relationship('service', 'name')->required()->searchable()->preload(),
 
                 Forms\Components\Select::make('technician_id')
-                    ->relationship('technician', 'name', fn ($q) => $q->where('role', 'technician'))
+                    ->relationship('technician', 'name', fn (Builder $query) => $query->where('role', 'technician'))
                     ->searchable()->preload()->nullable(),
 
                 Forms\Components\Select::make('status')
@@ -109,6 +124,8 @@ class RequestResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->striped()
+            ->poll('30s')
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('id')->label('#')->sortable()->alignCenter(),
@@ -128,6 +145,7 @@ class RequestResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->badge()->alignCenter()
                     ->formatStateUsing(fn (string $state) => ucwords(str_replace('_', ' ', $state)))
+                    ->icon(fn (string $state): ?string => self::statusIcon($state))
                     ->color(fn (string $state): string => self::statusColor($state)),
 
                 Tables\Columns\TextColumn::make('estimated_price')->numeric()->sortable()->alignEnd(),
@@ -144,14 +162,17 @@ class RequestResource extends Resource
                 Tables\Filters\SelectFilter::make('status')->options(self::$statuses),
                 Tables\Filters\SelectFilter::make('service_id')->label('Service')->relationship('service', 'name'),
                 Tables\Filters\TernaryFilter::make('is_paid')->label('Paid'),
-                Tables\Filters\Filter::make('created_at')
+                Tables\Filters\Filter::make('created_between')
+                    ->label('Created Date')
                     ->form([
                         Forms\Components\DatePicker::make('from'),
                         Forms\Components\DatePicker::make('until'),
                     ])
-                    ->query(fn (Builder $q, array $d) => $q
-                        ->when($d['from']  ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
-                        ->when($d['until'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))),
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['from']  ?? null, fn (Builder $q, $v) => $q->whereDate('created_at', '>=', $v))
+                            ->when($data['until'] ?? null, fn (Builder $q, $v) => $q->whereDate('created_at', '<=', $v));
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -167,28 +188,35 @@ class RequestResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Infolists\Components\Section::make('Request')->schema([
-                Infolists\Components\TextEntry::make('id')->label('#'),
-                Infolists\Components\TextEntry::make('title'),
-                Infolists\Components\TextEntry::make('description')->columnSpanFull(),
-                Infolists\Components\TextEntry::make('status')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state) => ucwords(str_replace('_', ' ', $state)))
-                    ->color(fn (string $state): string => self::statusColor($state)),
-                Infolists\Components\TextEntry::make('scheduled_date')->date('M d, Y'),
-                Infolists\Components\TextEntry::make('scheduled_time')->time('H:i'),
-            ])->columns(3),
+            Infolists\Components\Section::make('Request')
+                ->icon('heroicon-m-clipboard-document-list')
+                ->schema([
+                    Infolists\Components\TextEntry::make('id')->label('#'),
+                    Infolists\Components\TextEntry::make('title'),
+                    Infolists\Components\TextEntry::make('description')->columnSpanFull(),
+                    Infolists\Components\TextEntry::make('status')
+                        ->badge()
+                        ->formatStateUsing(fn (string $state) => ucwords(str_replace('_', ' ', $state)))
+                        ->icon(fn (string $state): string => self::statusIcon($state))
+                        ->color(fn (string $state): string => self::statusColor($state)),
+                    Infolists\Components\TextEntry::make('scheduled_date')->date('M d, Y'),
+                    Infolists\Components\TextEntry::make('scheduled_time')->time('H:i'),
+                ])->columns(3),
 
-            Infolists\Components\Section::make('People')->schema([
-                Infolists\Components\TextEntry::make('tenant.name')->label('Tenant'),
-                Infolists\Components\TextEntry::make('tenant.phone')->label('Tenant Phone'),
-                Infolists\Components\TextEntry::make('technician.name')->label('Technician')->placeholder('—'),
-                Infolists\Components\TextEntry::make('technician.phone')->label('Technician Phone')->placeholder('—'),
-                Infolists\Components\TextEntry::make('service.name')->label('Service')->badge(),
-                Infolists\Components\TextEntry::make('address.address_text')->label('Address'),
-            ])->columns(3),
+            Infolists\Components\Section::make('People')
+                ->icon('heroicon-m-user-group')
+                ->schema([
+                    Infolists\Components\TextEntry::make('tenant.name')->label('Tenant'),
+                    Infolists\Components\TextEntry::make('tenant.phone')->label('Tenant Phone'),
+                    Infolists\Components\TextEntry::make('technician.name')->label('Technician')->placeholder('—'),
+                    Infolists\Components\TextEntry::make('technician.phone')->label('Technician Phone')->placeholder('—'),
+                    Infolists\Components\TextEntry::make('service.name')->label('Service')->badge()->color('primary'),
+                    Infolists\Components\TextEntry::make('address.address_text')->label('Address'),
+                ])->columns(3),
 
-            Infolists\Components\Section::make('Pricing & Payment')->schema([
+            Infolists\Components\Section::make('Pricing & Payment')
+                ->icon('heroicon-m-banknotes')
+                ->schema([
                 Infolists\Components\TextEntry::make('estimated_price')->numeric()->suffix(' SYP'),
                 Infolists\Components\TextEntry::make('additions_total')->label('Additions Total')->numeric()->suffix(' SYP'),
                 Infolists\Components\TextEntry::make('final_price_syp')->label('Final Price')->numeric()->suffix(' SYP'),
@@ -197,16 +225,18 @@ class RequestResource extends Resource
                 Infolists\Components\TextEntry::make('estimate_note')->columnSpanFull()->placeholder('—'),
             ])->columns(3),
 
-            Infolists\Components\Section::make('Timeline')->schema([
-                Infolists\Components\TextEntry::make('estimated_at')->dateTime()->placeholder('—'),
-                Infolists\Components\TextEntry::make('confirmed_at')->dateTime()->placeholder('—'),
-                Infolists\Components\TextEntry::make('processing_at')->dateTime()->placeholder('—'),
-                Infolists\Components\TextEntry::make('final_approval_requested_at')->dateTime()->placeholder('—'),
-                Infolists\Components\TextEntry::make('completed_at')->dateTime()->placeholder('—'),
-                Infolists\Components\TextEntry::make('rejected_at')->dateTime()->placeholder('—'),
-                Infolists\Components\TextEntry::make('cancelled_at')->dateTime()->placeholder('—'),
-                Infolists\Components\TextEntry::make('cancellation_reason')->placeholder('—'),
-            ])->columns(2)->collapsed(),
+            Infolists\Components\Section::make('Timeline')
+                ->icon('heroicon-m-clock')
+                ->schema([
+                    Infolists\Components\TextEntry::make('estimated_at')->dateTime()->placeholder('—'),
+                    Infolists\Components\TextEntry::make('confirmed_at')->dateTime()->placeholder('—'),
+                    Infolists\Components\TextEntry::make('processing_at')->dateTime()->placeholder('—'),
+                    Infolists\Components\TextEntry::make('final_approval_requested_at')->dateTime()->placeholder('—'),
+                    Infolists\Components\TextEntry::make('completed_at')->dateTime()->placeholder('—'),
+                    Infolists\Components\TextEntry::make('rejected_at')->dateTime()->placeholder('—'),
+                    Infolists\Components\TextEntry::make('cancelled_at')->dateTime()->placeholder('—'),
+                    Infolists\Components\TextEntry::make('cancellation_reason')->placeholder('—'),
+                ])->columns(2)->collapsed(),
         ]);
     }
 

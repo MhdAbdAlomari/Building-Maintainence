@@ -27,7 +27,7 @@ class PaymentResource extends Resource
                 ->relationship('workRequest', 'title')
                 ->required()->searchable()->preload(),
             Forms\Components\Select::make('tenant_id')
-                ->relationship('tenant', 'name', fn ($q) => $q->where('role', 'tenant'))
+                ->relationship('tenant', 'name', fn (Builder $query) => $query->where('role', 'tenant'))
                 ->required()->searchable()->preload(),
             Forms\Components\TextInput::make('amount_usd_cents')->label('Amount (SYP)')->numeric()->required(),
             Forms\Components\TextInput::make('currency')->default('SYP')->required(),
@@ -48,6 +48,8 @@ class PaymentResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->striped()
+            ->poll('30s')
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('id')->label('#')->sortable(),
@@ -58,10 +60,20 @@ class PaymentResource extends Resource
                     ->label('Amount (SYP)')->numeric()->sortable(),
                 Tables\Columns\TextColumn::make('payment_method')
                     ->badge()
-                    ->color(fn (string $state) => $state === 'cash' ? 'warning' : 'primary'),
+                    ->icon(fn (string $state): string => $state === 'cash'
+                        ? 'heroicon-m-banknotes'
+                        : 'heroicon-m-credit-card')
+                    ->color(fn (string $state): string => $state === 'cash' ? 'success' : 'info'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state) => match ($state) {
+                    ->icon(fn (string $state): string => match ($state) {
+                        'paid'     => 'heroicon-m-check-circle',
+                        'pending'  => 'heroicon-m-clock',
+                        'failed'   => 'heroicon-m-x-circle',
+                        'canceled' => 'heroicon-m-no-symbol',
+                        default    => 'heroicon-m-question-mark-circle',
+                    })
+                    ->color(fn (string $state): string => match ($state) {
                         'paid'     => 'success',
                         'pending'  => 'warning',
                         'failed'   => 'danger',
@@ -80,14 +92,17 @@ class PaymentResource extends Resource
                         'failed'   => 'Failed',
                         'canceled' => 'Canceled',
                     ]),
-                Tables\Filters\Filter::make('created_at')
+                Tables\Filters\Filter::make('created_between')
+                    ->label('Created Date')
                     ->form([
                         Forms\Components\DatePicker::make('from'),
                         Forms\Components\DatePicker::make('until'),
                     ])
-                    ->query(fn (Builder $q, array $d) => $q
-                        ->when($d['from']  ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
-                        ->when($d['until'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))),
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when($data['from']  ?? null, fn (Builder $q, $v) => $q->whereDate('created_at', '>=', $v))
+                            ->when($data['until'] ?? null, fn (Builder $q, $v) => $q->whereDate('created_at', '<=', $v));
+                    }),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('exportCsv')

@@ -11,7 +11,9 @@ use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
@@ -23,8 +25,10 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->brandName('Building Maintenance Admin')
-            ->favicon(asset('favicon.ico'))
+            ->brandName('ShamFix')
+            ->brandLogo(asset('images/logo_app.png'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('images/logo_app.png'))
             ->default()
             ->id('admin')
             ->path('admin')
@@ -33,12 +37,13 @@ class AdminPanelProvider extends PanelProvider
             ->defaultThemeMode(ThemeMode::Light)
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->colors([
-                'primary' => Color::Blue,
-                'info'    => Color::Blue,
-                'success' => Color::Emerald,
-                'warning' => Color::Orange,
-                'danger'  => Color::Rose,
+                'primary' => Color::hex('#309949'),
+                'success' => Color::hex('#46A55E'),
+                'danger'  => Color::hex('#DC2626'),
+                'warning' => Color::hex('#F59E0B'),
+                'info'    => Color::hex('#3B82F6'),
                 'purple'  => Color::Purple,
+                'orange'  => Color::Orange,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -48,10 +53,10 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->navigationGroups([
                 NavigationGroup::make('Users Management')
-                    ->icon('heroicon-o-users')
+                    ->icon('heroicon-o-user-group')
                     ->collapsible(),
                 NavigationGroup::make('Operations')
-                    ->icon('heroicon-o-briefcase')
+                    ->icon('heroicon-o-clipboard-document-list')
                     ->collapsible(),
                 NavigationGroup::make('Finance')
                     ->icon('heroicon-o-banknotes')
@@ -60,7 +65,21 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('heroicon-o-cog-6-tooth')
                     ->collapsible(),
             ])
+            ->topNavigation(false)
             ->sidebarCollapsibleOnDesktop()
+            ->renderHook(
+                PanelsRenderHook::AUTH_LOGIN_FORM_BEFORE,
+                fn (): string => Blade::render(<<<'BLADE'
+                    <div class="text-center -mt-2 mb-2">
+                        <p class="text-sm font-medium tracking-wide uppercase" style="color: rgb(23,102,47);">
+                            Admin Panel
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Sign in to manage requests, technicians and payments
+                        </p>
+                    </div>
+                BLADE),
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

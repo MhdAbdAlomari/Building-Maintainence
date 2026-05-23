@@ -12,8 +12,10 @@ use Filament\Infolists;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class WalletResource extends Resource
@@ -28,7 +30,7 @@ class WalletResource extends Resource
     {
         return $form->schema([
             Forms\Components\Select::make('technician_id')
-                ->relationship('technician', 'name', fn ($q) => $q->where('role', 'technician'))
+                ->relationship('technician', 'name', fn (Builder $query) => $query->where('role', 'technician'))
                 ->required()->searchable()->unique(ignoreRecord: true),
             Forms\Components\TextInput::make('balance')->numeric()->required()->default(0),
             Forms\Components\TextInput::make('currency')->default('SYP')->required(),
@@ -38,13 +40,20 @@ class WalletResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->striped()
             ->defaultSort('updated_at', 'desc')
+            ->poll('30s')
             ->columns([
                 Tables\Columns\TextColumn::make('id')->label('#')->sortable(),
                 Tables\Columns\TextColumn::make('technician.name')->label('Technician')
-                    ->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('balance')->numeric()->sortable(),
-                Tables\Columns\TextColumn::make('currency'),
+                    ->searchable()->sortable()
+                    ->icon('heroicon-m-user'),
+                Tables\Columns\TextColumn::make('balance')
+                    ->sortable()
+                    ->formatStateUsing(fn ($state) => number_format((int) $state) . ' SYP')
+                    ->color('success')
+                    ->weight(FontWeight::Bold),
+                Tables\Columns\TextColumn::make('currency')->badge()->color('gray'),
                 Tables\Columns\TextColumn::make('updated_at')->dateTime('M d, Y H:i')->sortable(),
             ])
             ->actions([
@@ -63,27 +72,30 @@ class WalletResource extends Resource
                             ->label('Reason')->required()->maxLength(255),
                     ])
                     ->action(function (array $data, Wallet $record): void {
-                        DB::transaction(function () use ($data, $record) {
-                            $amount = (int) $data['amount'];
-                            $newBalance = $data['type'] === 'credit'
-                                ? $record->balance + $amount
-                                : $record->balance - $amount;
+                        $amount = (int) $data['amount'];
+                        $type   = $data['type'];
+                        $reason = $data['description'] ?? null;
 
-                            if ($newBalance < 0) {
-                                Notification::make()
-                                    ->title('Insufficient balance')
-                                    ->danger()->send();
-                                return;
+                        if ($type === 'debit' && (int) $record->balance < $amount) {
+                            Notification::make()
+                                ->title('Insufficient balance')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        DB::transaction(function () use ($record, $amount, $type, $reason) {
+                            if ($type === 'credit') {
+                                $record->increment('balance', $amount);
+                            } else {
+                                $record->decrement('balance', $amount);
                             }
 
-                            $record->update(['balance' => $newBalance]);
-
-                            WalletTransaction::create([
-                                'wallet_id'   => $record->id,
+                            $record->transactions()->create([
                                 'amount'      => $amount,
-                                'type'        => $data['type'],
+                                'type'        => $type,
                                 'status'      => 'completed',
-                                'description' => $data['description'],
+                                'description' => $reason ?? 'Admin adjustment',
                             ]);
                         });
 

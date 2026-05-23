@@ -15,15 +15,16 @@ class RequestsByStatusChart extends ChartWidget
 
     protected function getData(): array
     {
+        // ShamFix brand palette
         $palette = [
-            'pending'                 => '#f59e0b', // amber
-            'estimate_price'          => '#3b82f6', // blue
-            'confirmed'               => '#2563eb', // indigo-blue
-            'processing'              => '#06b6d4', // cyan
-            'awaiting_final_approval' => '#a855f7', // violet
-            'completed'               => '#10b981', // emerald
-            'rejected'                => '#ef4444', // red
-            'cancelled'               => '#6b7280', // gray
+            'pending'                 => '#F59E0B', // amber
+            'estimate_price'          => '#3B82F6', // blue
+            'confirmed'               => '#8B5CF6', // violet
+            'processing'              => '#14B8A6', // teal
+            'awaiting_final_approval' => '#EC4899', // pink
+            'completed'               => '#309949', // brand green
+            'rejected'                => '#EF4444', // red
+            'cancelled'               => '#6B7280', // gray
         ];
 
         $counts = Request::query()
