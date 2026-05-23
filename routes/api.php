@@ -18,6 +18,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RequestAdditionController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TestFirebaseNotificationController;
+use App\Http\Controllers\WalletController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -163,6 +164,14 @@ Route::middleware(['auth:sanctum','role:admin'])
     Route::middleware('auth:sanctum')->post('/save-fcm-token', [NotificationTokenController::class, 'store']);
     //test
     Route::middleware('auth:sanctum')->post('/test-firebase-notification', [TestFirebaseNotificationController::class, 'send']);
+
+    // Technician Wallet
+    Route::middleware(['auth:sanctum', 'role:technician'])
+        ->prefix('technician/wallet')
+        ->group(function () {
+            Route::get('/balance', [WalletController::class, 'balance']);
+            Route::get('/transactions', [WalletController::class, 'transactions']);
+        });
 
     //banners
     Route::get('banners',[BannerController::class,'index']);

@@ -41,6 +41,10 @@ class RequestResource extends JsonResource
                 : null,
             'is_paid' => (bool) $this->is_paid,
             'paid_at' => $this->paid_at,
+            'payment_method' => $this->whenLoaded('payments', function () {
+                $paid = $this->payments->firstWhere('status', 'paid');
+                return $paid?->payment_method;
+            }),
             'can_pay' => $this->status === 'completed'
                 && !empty($this->final_price_syp)
                 && !$this->is_paid,
