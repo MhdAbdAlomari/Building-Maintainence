@@ -34,15 +34,25 @@ class MonthlyRevenueChart extends ChartWidget
             $data[]   = (int) ($rows[$month->format('Y-m')] ?? 0);
         }
 
+        // Light-to-dark green gradient across the 12 bars (#46A55E → #17662F)
+        $bars = [];
+        for ($i = 0; $i < 12; $i++) {
+            $t = $i / 11;
+            $r = (int) round(70 + (23 - 70) * $t);
+            $g = (int) round(165 + (102 - 165) * $t);
+            $b = (int) round(94 + (47 - 94) * $t);
+            $bars[] = sprintf('#%02X%02X%02X', $r, $g, $b);
+        }
+
         return [
             'datasets' => [[
-                'label'           => 'Revenue (SYP)',
-                'data'            => $data,
-                'backgroundColor' => '#7c3aed',
-                'borderColor'     => '#5b21b6',
-                'borderWidth'     => 1,
-                'borderRadius'    => 6,
-                'hoverBackgroundColor' => '#6d28d9',
+                'label'                => 'Revenue (SYP)',
+                'data'                 => $data,
+                'backgroundColor'      => $bars,
+                'borderColor'          => '#17662F',
+                'borderWidth'          => 1,
+                'borderRadius'         => 6,
+                'hoverBackgroundColor' => '#46A55E',
             ]],
             'labels' => $labels,
         ];

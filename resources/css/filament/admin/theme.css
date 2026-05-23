@@ -25,19 +25,56 @@
 }
 
 
-@import '../../../../vendor/filament/filament/resources/css/theme.css';
-
-/* الخلفية */
+/* Background */
 .fi-body {
-  background-image: url('C:\xampp1\htdocs\Building-Maintainence\public\images\admin-bg.png'); /* مهم: خليها path ويب مش مسار ويندوز */
+  background-image: url('/images/admin-bg.png');
   background-repeat: no-repeat;
-
   background-size: clamp(700px, 55vw, 1200px) auto;
   background-position: 95% 85%;
   background-attachment: fixed;
-
-  /* يقوّي ألوان الصورة */
   filter: saturate(1.35) contrast(1.12) brightness(1.);
+}
+
+/* Login page — green gradient backdrop */
+.fi-simple-layout {
+  background: linear-gradient(135deg,
+    rgba(48, 153, 73, 0.08) 0%,
+    rgba(70, 165, 94, 0.05) 35%,
+    rgba(255, 255, 255, 0.95) 70%,
+    rgba(23, 102, 47, 0.08) 100%
+  );
+}
+
+.fi-simple-main-ctn {
+  position: relative;
+}
+
+.fi-simple-main {
+  border-top: 4px solid #309949 !important;
+  box-shadow: 0 20px 50px -10px rgba(48,153,73,0.18), 0 8px 16px -8px rgba(0,0,0,0.08) !important;
+}
+
+/* Table rows - hover effect */
+.fi-ta-row:hover {
+  background-color: rgba(48, 153, 73, 0.04) !important;
+}
+
+/* Sidebar - active item green accent */
+.fi-sidebar-item-active .fi-sidebar-item-button {
+  background-color: rgba(48, 153, 73, 0.10) !important;
+  color: rgb(23, 102, 47) !important;
+  border-left: 3px solid #309949 !important;
+}
+
+/* Animation for processing status badge */
+@keyframes shamfix-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+.fi-badge[style*="rgb(59, 130, 246)"]:has(.heroicon-arrow-path),
+.fi-badge .heroicon-m-arrow-path,
+.fi-badge .heroicon-o-arrow-path {
+  animation: shamfix-pulse 1.6s ease-in-out infinite;
 }
 
 /* Overlay (خفّف الأبيض خصوصًا باليمين) */

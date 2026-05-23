@@ -25,17 +25,16 @@ class RequestsByServiceChart extends ChartWidget
             ->pluck('c', 'service_id')
             ->toArray();
 
+        // ShamFix brand palette — spec order
         $palette = [
-            '#2563eb', // blue
-            '#10b981', // emerald
-            '#f59e0b', // amber
-            '#a855f7', // violet
-            '#ef4444', // red
-            '#06b6d4', // cyan
-            '#ec4899', // pink
-            '#84cc16', // lime
-            '#f97316', // orange
-            '#6366f1', // indigo
+            '#309949', // brand green
+            '#3B82F6', // blue
+            '#F59E0B', // amber
+            '#8B5CF6', // violet
+            '#EC4899', // pink
+            '#EF4444', // red
+            '#6B7280', // gray
+            '#14B8A6', // teal
         ];
 
         $labels = [];

@@ -31,6 +31,8 @@ class ServiceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->striped()
+            ->poll('30s')
             ->defaultSort('name')
             ->columns([
                 Tables\Columns\TextColumn::make('id')->sortable()->toggleable(isToggledHiddenByDefault: true),

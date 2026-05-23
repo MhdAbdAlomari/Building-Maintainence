@@ -70,6 +70,8 @@ class TechnicianResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->striped()
+            ->poll('30s')
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('id')->sortable()->toggleable(isToggledHiddenByDefault: true),

@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Widgets\MonthlyRevenueChart;
+use App\Filament\Widgets\PaymentsByMethodChart;
 use App\Filament\Widgets\RequestStats;
 use App\Filament\Widgets\RequestsByServiceChart;
 use App\Filament\Widgets\RequestsByStatusChart;
@@ -33,6 +34,7 @@ class Dashboard extends BaseDashboard
             MonthlyRevenueChart::class,
             RequestsByStatusChart::class,
             RequestsByServiceChart::class,
+            PaymentsByMethodChart::class,
         ];
     }
 }

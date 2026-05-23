@@ -38,10 +38,10 @@ class RequestsPerMonthChart extends ChartWidget
                 [
                     'label'           => 'Requests',
                     'data'            => $data,
-                    'borderColor'     => '#2563eb',
-                    'backgroundColor' => 'rgba(37, 99, 235, 0.15)',
+                    'borderColor'     => '#309949',
+                    'backgroundColor' => 'rgba(48, 153, 73, 0.15)',
                     'borderWidth'     => 2,
-                    'pointBackgroundColor' => '#2563eb',
+                    'pointBackgroundColor' => '#309949',
                     'pointRadius'     => 4,
                     'pointHoverRadius' => 6,
                     'fill'            => true,

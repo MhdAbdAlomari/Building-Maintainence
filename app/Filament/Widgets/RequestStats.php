@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Models\Payment;
 use App\Models\Request;
 use App\Models\User;
+use App\Models\Wallet;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,85 +22,75 @@ class RequestStats extends BaseWidget
 
     protected function getStats(): array
     {
-        $now      = now();
-        $thisFrom = $now->copy()->startOfMonth();
-        $thisTo   = $now->copy()->endOfMonth();
-        $lastFrom = $now->copy()->subMonth()->startOfMonth();
-        $lastTo   = $now->copy()->subMonth()->endOfMonth();
+        // Totals
+        $tenants         = User::where('role', 'tenant')->count();
+        $technicians     = User::where('role', 'technician')->count();
+        $requests        = Request::count();
+        $revenue         = (int) Payment::where('status', 'paid')->sum('amount_usd_cents');
+        $cashTotal       = (int) Payment::where('status', 'paid')->where('payment_method', 'cash')->sum('amount_usd_cents');
+        $stripeTotal     = (int) Payment::where('status', 'paid')->where('payment_method', 'stripe')->sum('amount_usd_cents');
+        $walletTotal     = (int) Wallet::sum('balance');
+        $pendingPayCount = Payment::where('status', 'pending')->count();
 
-        $tenants     = User::where('role', 'tenant')->count();
-        $technicians = User::where('role', 'technician')->count();
-        $requests    = Request::count();
-        $revenue     = (int) Payment::where('status', 'paid')->sum('amount_usd_cents');
-
-        $tenantsThis = User::where('role', 'tenant')->whereBetween('created_at', [$thisFrom, $thisTo])->count();
-        $tenantsLast = User::where('role', 'tenant')->whereBetween('created_at', [$lastFrom, $lastTo])->count();
-
-        $techThis    = User::where('role', 'technician')->whereBetween('created_at', [$thisFrom, $thisTo])->count();
-        $techLast    = User::where('role', 'technician')->whereBetween('created_at', [$lastFrom, $lastTo])->count();
-
-        $reqThis     = Request::whereBetween('created_at', [$thisFrom, $thisTo])->count();
-        $reqLast     = Request::whereBetween('created_at', [$lastFrom, $lastTo])->count();
-
-        $revenueThis = (int) Payment::where('status', 'paid')->whereBetween('created_at', [$thisFrom, $thisTo])->sum('amount_usd_cents');
-        $revenueLast = (int) Payment::where('status', 'paid')->whereBetween('created_at', [$lastFrom, $lastTo])->sum('amount_usd_cents');
-
+        // Sparkline data — last 7 days
         $tenantChart  = $this->lastDaysCounts(User::query()->where('role', 'tenant'), 7);
         $techChart    = $this->lastDaysCounts(User::query()->where('role', 'technician'), 7);
         $reqChart     = $this->lastDaysCounts(Request::query(), 7);
         $revenueChart = $this->lastDaysSums(Payment::query()->where('status', 'paid'), 7, 'amount_usd_cents');
+        $cashChart    = $this->lastDaysSums(Payment::query()->where('status', 'paid')->where('payment_method', 'cash'), 7, 'amount_usd_cents');
+        $stripeChart  = $this->lastDaysSums(Payment::query()->where('status', 'paid')->where('payment_method', 'stripe'), 7, 'amount_usd_cents');
+        $pendingChart = $this->lastDaysCounts(Payment::query()->where('status', 'pending'), 7);
 
         return [
+            // Row 1 — per spec
             Stat::make('Total Tenants', number_format($tenants))
-                ->description($this->trendLabel($tenantsThis, $tenantsLast))
-                ->descriptionIcon($this->trendIcon($tenantsThis, $tenantsLast))
+                ->description('Registered tenants')
+                ->descriptionIcon('heroicon-m-user-group')
                 ->color('info')
                 ->chart($tenantChart),
 
             Stat::make('Total Technicians', number_format($technicians))
-                ->description($this->trendLabel($techThis, $techLast))
-                ->descriptionIcon($this->trendIcon($techThis, $techLast))
+                ->description('Active technicians')
+                ->descriptionIcon('heroicon-m-wrench-screwdriver')
                 ->color('success')
                 ->chart($techChart),
 
             Stat::make('Total Requests', number_format($requests))
-                ->description($this->trendLabel($reqThis, $reqLast))
-                ->descriptionIcon($this->trendIcon($reqThis, $reqLast))
+                ->description('All maintenance requests')
+                ->descriptionIcon('heroicon-m-clipboard-document-list')
                 ->color('warning')
                 ->chart($reqChart),
 
             Stat::make('Total Revenue', number_format($revenue) . ' SYP')
-                ->description($this->trendLabel($revenueThis, $revenueLast))
-                ->descriptionIcon($this->trendIcon($revenueThis, $revenueLast))
-                ->color('purple')
+                ->description('From paid orders')
+                ->descriptionIcon('heroicon-m-banknotes')
+                ->color('success')
                 ->chart($revenueChart),
+
+            // Row 2 — wallet / payment breakdown
+            Stat::make('Cash Payments', number_format($cashTotal) . ' SYP')
+                ->description('Paid in cash')
+                ->descriptionIcon('heroicon-m-banknotes')
+                ->color('success')
+                ->chart($cashChart),
+
+            Stat::make('Stripe Payments', number_format($stripeTotal) . ' SYP')
+                ->description('Paid via Stripe')
+                ->descriptionIcon('heroicon-m-credit-card')
+                ->color('info')
+                ->chart($stripeChart),
+
+            Stat::make('Wallet Balance', number_format($walletTotal) . ' SYP')
+                ->description('Sum of technician wallets')
+                ->descriptionIcon('heroicon-m-wallet')
+                ->color('purple'),
+
+            Stat::make('Pending Payments', number_format($pendingPayCount))
+                ->description('Awaiting completion')
+                ->descriptionIcon('heroicon-m-clock')
+                ->color('danger')
+                ->chart($pendingChart),
         ];
-    }
-
-    protected function trendLabel(int|float $current, int|float $previous): string
-    {
-        if ($previous == 0 && $current == 0) {
-            return 'No change from last month';
-        }
-
-        if ($previous == 0) {
-            return '+100% from last month';
-        }
-
-        $pct = round((($current - $previous) / $previous) * 100, 1);
-        $sign = $pct >= 0 ? '+' : '';
-        return "{$sign}{$pct}% from last month";
-    }
-
-    protected function trendIcon(int|float $current, int|float $previous): string
-    {
-        if ($previous == 0 && $current == 0) {
-            return 'heroicon-m-minus';
-        }
-        if ($current >= $previous) {
-            return 'heroicon-m-arrow-trending-up';
-        }
-        return 'heroicon-m-arrow-trending-down';
     }
 
     protected function lastDaysCounts(Builder $query, int $days): array

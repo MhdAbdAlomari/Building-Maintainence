@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Storage;
 
 class BannerResource extends Resource
 {
@@ -22,9 +23,21 @@ class BannerResource extends Resource
     {
         return $form->schema([
             Forms\Components\FileUpload::make('image')
-                ->image()->required()
+                ->disk('public')
                 ->directory('banners')
-                ->disk('public'),
+                ->visibility('public')
+                ->image()
+                ->imageEditor()
+                ->required()
+                ->formatStateUsing(function ($state) {
+                    if (blank($state)) {
+                        return $state;
+                    }
+                    if (preg_match('#/storage/(.+)$#', (string) $state, $m)) {
+                        return $m[1];
+                    }
+                    return $state;
+                }),
             Forms\Components\TextInput::make('sort_order')->numeric()->default(0)->required(),
             Forms\Components\Toggle::make('is_active')->default(true),
         ]);
@@ -33,11 +46,26 @@ class BannerResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->striped()
+            ->poll('30s')
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
             ->columns([
                 Tables\Columns\TextColumn::make('id')->sortable(),
-                Tables\Columns\ImageColumn::make('image')->disk('public')->height(60),
+                Tables\Columns\ImageColumn::make('image')
+                    ->getStateUsing(function ($record) {
+                        $image = (string) $record->image;
+                        if ($image === '') {
+                            return null;
+                        }
+                        if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://')) {
+                            return $image;
+                        }
+                        return Storage::disk('public')->url(ltrim($image, '/'));
+                    })
+                    ->width(100)
+                    ->height(60)
+                    ->extraImgAttributes(['class' => 'rounded-lg object-cover']),
                 Tables\Columns\TextColumn::make('sort_order')->sortable()->alignCenter(),
                 Tables\Columns\ToggleColumn::make('is_active')->label('Active'),
                 Tables\Columns\TextColumn::make('created_at')->dateTime('M d, Y')->sortable(),

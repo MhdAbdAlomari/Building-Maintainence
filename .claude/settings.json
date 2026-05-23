@@ -7,7 +7,8 @@
       "Bash(php -l app/Filament/Pages/Dashboard.php)",
       "Bash(php -l app/Filament/Widgets/RequestStats.php)",
       "Bash(php -l app/Filament/Widgets/RequestsPerMonthChart.php)",
-      "Bash(php -l app/Filament/Widgets/MonthlyRevenueChart.php)"
+      "Bash(php -l app/Filament/Widgets/MonthlyRevenueChart.php)",
+      "PowerShell(Copy-Item \"logo_app.png\" -Destination \"public/images/logo_app.png\" -Force)"
     ]
   }
 }
