@@ -208,3 +208,7 @@ Route::middleware(['auth:sanctum','role:admin'])
     return response()->json(['message' => 'Admin created!']);
 });
 
+Route::get('/import-data', function () {
+    \Illuminate\Support\Facades\DB::unprepared(file_get_contents(base_path('database/data_only.sql')));
+    return response()->json(['message' => 'Data imported successfully!']);
+});
