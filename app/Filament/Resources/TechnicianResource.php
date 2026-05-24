@@ -4,6 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\TechnicianResource\Pages;
 use App\Filament\Resources\TechnicianResource\RelationManagers;
+use App\Models\AppSetting;
+use App\Models\Commission;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -87,6 +89,23 @@ class TechnicianResource extends Resource
                     ->numeric()
                     ->sortable()
                     ->default(0),
+                Tables\Columns\TextColumn::make('current_debt')
+                    ->label('Debt (SYP)')
+                    ->getStateUsing(fn (User $record) => (int) Commission::where('technician_id', $record->id)
+                        ->where('status', 'pending_debt')
+                        ->sum('commission_amount'))
+                    ->formatStateUsing(fn ($state) => number_format((int) $state))
+                    ->color(fn ($state) => (int) $state > 0 ? 'danger' : 'gray'),
+                Tables\Columns\IconColumn::make('is_blocked')
+                    ->label('Blocked')
+                    ->getStateUsing(fn (User $record) => (int) Commission::where('technician_id', $record->id)
+                        ->where('status', 'pending_debt')
+                        ->sum('commission_amount') >= AppSetting::getDebtCeiling())
+                    ->boolean()
+                    ->trueIcon('heroicon-o-lock-closed')
+                    ->falseIcon('heroicon-o-lock-open')
+                    ->trueColor('danger')
+                    ->falseColor('success'),
                 Tables\Columns\TextColumn::make('technicianDetail.max_distance_km')
                     ->label('Max KM')->alignCenter()->sortable(),
                 Tables\Columns\TextColumn::make('assigned_requests_count')
@@ -145,6 +164,29 @@ class TechnicianResource extends Resource
                 Infolists\Components\TextEntry::make('wallet.balance')->label('Balance')->numeric()->suffix(' SYP'),
                 Infolists\Components\TextEntry::make('wallet.currency')->label('Currency'),
                 Infolists\Components\TextEntry::make('wallet.updated_at')->label('Updated')->dateTime(),
+            ])->columns(3),
+
+            Infolists\Components\Section::make('Commissions & Debt')->schema([
+                Infolists\Components\TextEntry::make('current_debt')
+                    ->label('Current Debt')
+                    ->getStateUsing(fn (User $record) => (int) Commission::where('technician_id', $record->id)
+                        ->where('status', 'pending_debt')
+                        ->sum('commission_amount'))
+                    ->formatStateUsing(fn ($state) => number_format((int) $state) . ' SYP')
+                    ->color(fn ($state) => (int) $state > 0 ? 'danger' : 'success'),
+                Infolists\Components\TextEntry::make('is_blocked')
+                    ->label('Status')
+                    ->badge()
+                    ->getStateUsing(fn (User $record) => (int) Commission::where('technician_id', $record->id)
+                        ->where('status', 'pending_debt')
+                        ->sum('commission_amount') >= AppSetting::getDebtCeiling() ? 'Blocked' : 'Active')
+                    ->color(fn ($state) => $state === 'Blocked' ? 'danger' : 'success'),
+                Infolists\Components\TextEntry::make('total_commissions_paid')
+                    ->label('Total Commissions Paid')
+                    ->getStateUsing(fn (User $record) => (int) Commission::where('technician_id', $record->id)
+                        ->where('status', 'collected')
+                        ->sum('commission_amount'))
+                    ->formatStateUsing(fn ($state) => number_format((int) $state) . ' SYP'),
             ])->columns(3),
         ]);
     }

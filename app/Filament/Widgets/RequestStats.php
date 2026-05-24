@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Commission;
 use App\Models\Payment;
 use App\Models\Request;
 use App\Models\User;
@@ -31,6 +32,8 @@ class RequestStats extends BaseWidget
         $stripeTotal     = (int) Payment::where('status', 'paid')->where('payment_method', 'stripe')->sum('amount_usd_cents');
         $walletTotal     = (int) Wallet::sum('balance');
         $pendingPayCount = Payment::where('status', 'pending')->count();
+        $commissionsCollected = (int) Commission::where('status', 'collected')->sum('commission_amount');
+        $outstandingDebt      = (int) Commission::where('status', 'pending_debt')->sum('commission_amount');
 
         // Sparkline data — last 7 days
         $tenantChart  = $this->lastDaysCounts(User::query()->where('role', 'tenant'), 7);
@@ -90,6 +93,16 @@ class RequestStats extends BaseWidget
                 ->descriptionIcon('heroicon-m-clock')
                 ->color('danger')
                 ->chart($pendingChart),
+
+            Stat::make('Commissions Collected', number_format($commissionsCollected) . ' SYP')
+                ->description('Total received')
+                ->descriptionIcon('heroicon-m-receipt-percent')
+                ->color('success'),
+
+            Stat::make('Outstanding Debt', number_format($outstandingDebt) . ' SYP')
+                ->description('Owed by technicians')
+                ->descriptionIcon('heroicon-m-exclamation-circle')
+                ->color('danger'),
         ];
     }
 

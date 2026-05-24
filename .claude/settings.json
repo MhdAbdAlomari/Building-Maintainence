@@ -9,7 +9,14 @@
       "Bash(php -l app/Filament/Widgets/RequestsPerMonthChart.php)",
       "Bash(php -l app/Filament/Widgets/MonthlyRevenueChart.php)",
       "PowerShell(Copy-Item \"logo_app.png\" -Destination \"public/images/logo_app.png\" -Force)",
-      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $app->make\\('\\\\''Illuminate\\\\Contracts\\\\Console\\\\Kernel'\\\\''\\)->bootstrap\\(\\); echo '\\\\''OK '\\\\''.\\\\App\\\\Filament\\\\Resources\\\\WithdrawalRequestResource::class.PHP_EOL;')"
+      "Bash(php -r 'require '\\\\''vendor/autoload.php'\\\\''; $app = require '\\\\''bootstrap/app.php'\\\\''; $app->make\\('\\\\''Illuminate\\\\Contracts\\\\Console\\\\Kernel'\\\\''\\)->bootstrap\\(\\); echo '\\\\''OK '\\\\''.\\\\App\\\\Filament\\\\Resources\\\\WithdrawalRequestResource::class.PHP_EOL;')",
+      "Bash(findstr /R \"debt settle commission\")",
+      "Bash(findstr /I \"debt settle\")",
+      "Bash(findstr /I \"debt\")",
+      "PowerShell(php artisan route:list --path=debt)",
+      "PowerShell(php artisan route:list --path=admin/app-settings)",
+      "PowerShell(php artisan route:list --path=commission)",
+      "PowerShell(php artisan tinker --execute=\"echo App\\\\Models\\\\AppSetting::get\\('owner_name'\\).'|'.App\\\\Models\\\\AppSetting::get\\('owner_phone'\\).'|'.App\\\\Models\\\\AppSetting::get\\('owner_governorate'\\);\")"
     ]
   }
 }

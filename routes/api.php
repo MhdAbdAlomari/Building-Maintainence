@@ -19,6 +19,7 @@ use App\Http\Controllers\RequestAdditionController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\TechnicianProfileController;
 use App\Http\Controllers\TestFirebaseNotificationController;
+use App\Http\Controllers\DebtSettlementController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\WithdrawalController;
 use Illuminate\Http\Request;
@@ -184,6 +185,13 @@ Route::middleware(['auth:sanctum','role:admin'])
             Route::post('/withdraw', [WithdrawalController::class, 'store']);
             Route::get('/withdrawals', [WithdrawalController::class, 'index']);
             Route::delete('/withdrawals/{id}', [WithdrawalController::class, 'destroy']);
+
+            Route::get('/debt', [DebtSettlementController::class, 'debt']);
+            Route::post('/settle-debt', [DebtSettlementController::class, 'store']);
+            Route::get('/settlements', [DebtSettlementController::class, 'index']);
+            Route::delete('/settlements/{id}', [DebtSettlementController::class, 'destroy']);
+
+            Route::get('/transfer-info', [WalletController::class, 'transferInfo']);
         });
 
     //banners

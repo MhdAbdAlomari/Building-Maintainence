@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
+use App\Models\Commission;
 use App\Models\Payment;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
@@ -62,13 +64,27 @@ class PaymentController extends Controller
                 'paid_at' => now(),
             ]);
 
-            $this->creditTechnicianWallet($item);
+            $finalPrice = (int) $item->final_price_syp;
+            $commissionRate = AppSetting::getCommissionRate();
+            $commissionAmount = (int) ceil($finalPrice * $commissionRate / 100);
+
+            Commission::create([
+                'request_id'        => $item->id,
+                'technician_id'     => $item->technician_id,
+                'payment_id'        => $payment->id,
+                'request_amount'    => $finalPrice,
+                'commission_rate'   => $commissionRate,
+                'commission_amount' => $commissionAmount,
+                'payment_method'    => 'cash',
+                'status'            => 'pending_debt',
+            ]);
 
             return $this->response([
-                'payment_id' => $payment->id,
-                'payment_method' => 'cash',
-                'amount_syp' => $item->final_price_syp,
-                'message' => 'Cash payment recorded and technician wallet credited',
+                'payment_id'        => $payment->id,
+                'payment_method'    => 'cash',
+                'amount_syp'        => $finalPrice,
+                'commission_amount' => $commissionAmount,
+                'message'           => 'Cash payment recorded. Commission added to technician debt.',
             ]);
         });
     }
@@ -124,9 +140,15 @@ class PaymentController extends Controller
         ]);
     }
 
-    public static function creditTechnicianWallet(WorkRequest $item): void
+    public static function creditTechnicianWallet(WorkRequest $item, ?int $customAmount = null): void
     {
-        if (!$item->technician_id || !$item->final_price_syp) {
+        if (!$item->technician_id) {
+            return;
+        }
+
+        $amount = $customAmount ?? (int) $item->final_price_syp;
+
+        if ($amount <= 0) {
             return;
         }
 
@@ -135,14 +157,14 @@ class PaymentController extends Controller
             ['balance' => 0, 'currency' => 'SYP']
         );
 
-        $wallet->increment('balance', $item->final_price_syp);
+        $wallet->increment('balance', $amount);
 
         WalletTransaction::create([
-            'wallet_id' => $wallet->id,
-            'amount' => $item->final_price_syp,
-            'type' => 'credit',
-            'status' => 'completed',
-            'request_id' => $item->id,
+            'wallet_id'   => $wallet->id,
+            'amount'      => $amount,
+            'type'        => 'credit',
+            'status'      => 'completed',
+            'request_id'  => $item->id,
             'description' => "Payment for request #{$item->id}",
         ]);
     }

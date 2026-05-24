@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\WalletResource;
 use App\Http\Resources\WalletTransactionResource;
+use App\Models\AppSetting;
 use App\Models\Wallet;
+use App\Models\WithdrawalRequest;
 use Illuminate\Http\Request as HttpRequest;
 
 class WalletController extends Controller
@@ -18,7 +19,20 @@ class WalletController extends Controller
             ['balance' => 0, 'currency' => 'SYP']
         );
 
-        return $this->response(new WalletResource($wallet));
+        $totalDebt = $technician->getTotalDebt();
+        $debtCeiling = AppSetting::getDebtCeiling();
+
+        return $this->response([
+            'id'               => $wallet->id,
+            'technician_id'    => $wallet->technician_id,
+            'balance'          => (int) $wallet->balance,
+            'balance_label'    => number_format((int) $wallet->balance) . ' ' . $wallet->currency,
+            'currency'         => $wallet->currency,
+            'total_debt'       => $totalDebt,
+            'total_debt_label' => number_format($totalDebt) . ' SYP',
+            'is_blocked'       => $totalDebt >= $debtCeiling,
+            'debt_ceiling'     => $debtCeiling,
+        ]);
     }
 
     public function transactions(HttpRequest $request)
@@ -39,7 +53,13 @@ class WalletController extends Controller
             ->paginate(20);
 
         return $this->response([
-            'wallet' => new WalletResource($wallet),
+            'wallet' => [
+                'id'            => $wallet->id,
+                'technician_id' => $wallet->technician_id,
+                'balance'       => (int) $wallet->balance,
+                'balance_label' => number_format((int) $wallet->balance) . ' ' . $wallet->currency,
+                'currency'      => $wallet->currency,
+            ],
             'transactions' => WalletTransactionResource::collection($transactions),
             'pagination' => [
                 'current_page' => $transactions->currentPage(),
@@ -47,6 +67,19 @@ class WalletController extends Controller
                 'per_page' => $transactions->perPage(),
                 'total' => $transactions->total(),
             ],
+        ]);
+    }
+
+    public function transferInfo(HttpRequest $request)
+    {
+        $governorate = AppSetting::get('owner_governorate', 'damascus');
+        $labels = WithdrawalRequest::governorateLabels();
+
+        return $this->response([
+            'owner_name'              => AppSetting::get('owner_name'),
+            'owner_phone'             => AppSetting::get('owner_phone'),
+            'owner_governorate'       => $governorate,
+            'owner_governorate_label' => $labels[$governorate] ?? $governorate,
         ]);
     }
 }

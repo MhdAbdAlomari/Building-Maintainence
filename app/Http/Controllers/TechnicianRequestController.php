@@ -22,6 +22,10 @@ class TechnicianRequestController extends Controller
     {
         $user = $request->user();
 
+        if ($user->isDebtBlocked()) {
+            return $this->response([], 'You have outstanding dues. Please settle your balance to receive new requests.');
+        }
+
         $detail = TechnicianDetail::where('user_id', $user->id)->first();
 
         if (!$detail) {
@@ -111,6 +115,10 @@ class TechnicianRequestController extends Controller
     private function getPendingRequests(HttpRequest $request)
     {
         $user = $request->user();
+
+        if ($user->isDebtBlocked()) {
+            return $this->response([], 'You have outstanding dues. Please settle your balance to receive new requests.');
+        }
 
         $detail = TechnicianDetail::where('user_id', $user->id)->first();
 

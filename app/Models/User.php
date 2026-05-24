@@ -108,4 +108,26 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->hasMany(WithdrawalRequest::class, 'technician_id');
     }
+
+    public function commissions()
+    {
+        return $this->hasMany(Commission::class, 'technician_id');
+    }
+
+    public function debtSettlements()
+    {
+        return $this->hasMany(DebtSettlement::class, 'technician_id');
+    }
+
+    public function getTotalDebt(): int
+    {
+        return (int) $this->commissions()
+            ->where('status', 'pending_debt')
+            ->sum('commission_amount');
+    }
+
+    public function isDebtBlocked(): bool
+    {
+        return $this->getTotalDebt() >= AppSetting::getDebtCeiling();
+    }
 }
