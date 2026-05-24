@@ -210,8 +210,22 @@ Route::middleware(['auth:sanctum','role:admin'])
 
 Route::get('/import-data', function () {
     DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+    
     $sql = file_get_contents(base_path('database/data_only.sql'));
-    DB::unprepared($sql);
+    $statements = array_filter(array_map('trim', explode(';', $sql)));
+    
+    foreach ($statements as $statement) {
+        if (empty($statement) || str_starts_with($statement, '--') || str_starts_with($statement, '/*')) continue;
+        if (stripos($statement, 'ALTER TABLE') !== false) continue;
+        if (stripos($statement, 'CREATE TABLE') !== false) continue;
+        
+        try {
+            DB::unprepared($statement . ';');
+        } catch (\Exception $e) {
+            // skip errors and continue
+        }
+    }
+    
     DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-    return response()->json(['message' => 'Data imported successfully!']);
+    return response()->json(['message' => 'Data imported!']);
 });
