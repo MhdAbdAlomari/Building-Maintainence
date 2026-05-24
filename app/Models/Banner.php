@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Banner extends Model
 {
@@ -20,7 +21,7 @@ class Banner extends Model
                 if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
                     return $value;
                 }
-                return asset('storage/' . ltrim($value, '/'));
+                return Storage::disk('public')->url($value);
             },
         );
     }
