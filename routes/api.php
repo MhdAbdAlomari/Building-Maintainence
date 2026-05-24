@@ -197,5 +197,14 @@ Route::middleware(['auth:sanctum','role:admin'])
     //banners
     Route::get('banners',[BannerController::class,'index']);
 
-
+    Route::get('/create-admin', function () {
+    \App\Models\User::create([
+        'name' => 'Admin',
+        'email' => 'admin@shamfix.com',
+        'password' => bcrypt('password'),
+        'phone' => '0000000000',
+        'role' => 'admin',
+    ]);
+    return response()->json(['message' => 'Admin created!']);
+});
 
