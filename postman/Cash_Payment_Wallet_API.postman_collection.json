@@ -1,0 +1,138 @@
+{
+  "info": {
+    "name": "Cash Payment & Technician Wallet API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Test collection for Cash Payment workflow and Technician Wallet system"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://192.168.1.103:8000/api"
+    },
+    {
+      "key": "tenant_token",
+      "value": "YOUR_TENANT_TOKEN_HERE"
+    },
+    {
+      "key": "technician_token",
+      "value": "YOUR_TECHNICIAN_TOKEN_HERE"
+    },
+    {
+      "key": "request_id",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Pay with Cash",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tenant_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"payment_method\": \"cash\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/requests/{{request_id}}/pay",
+          "host": ["{{base_url}}"],
+          "path": ["requests", "{{request_id}}", "pay"]
+        },
+        "description": "Tenant pays for a completed request using cash. The final_price_syp is automatically credited to the technician's wallet."
+      }
+    },
+    {
+      "name": "2. Pay with Stripe (existing flow)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{tenant_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"payment_method\": \"stripe\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/requests/{{request_id}}/pay",
+          "host": ["{{base_url}}"],
+          "path": ["requests", "{{request_id}}", "pay"]
+        },
+        "description": "Tenant pays via Stripe. Omitting payment_method also defaults to stripe for backward compatibility."
+      }
+    },
+    {
+      "name": "3. Get Technician Wallet Balance",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{technician_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/technician/wallet/balance",
+          "host": ["{{base_url}}"],
+          "path": ["technician", "wallet", "balance"]
+        },
+        "description": "Fetch the authenticated technician's wallet balance. Creates a wallet automatically if one doesn't exist."
+      }
+    },
+    {
+      "name": "4. Get Wallet Transaction History",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{technician_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/technician/wallet/transactions?page=1",
+          "host": ["{{base_url}}"],
+          "path": ["technician", "wallet", "transactions"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1",
+              "description": "Page number for pagination (20 per page)"
+            }
+          ]
+        },
+        "description": "Fetch the authenticated technician's wallet balance along with paginated transaction history."
+      }
+    }
+  ]
+}

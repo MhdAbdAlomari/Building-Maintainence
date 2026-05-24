@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AppSetting;
+use App\Models\Commission;
 use App\Models\Payment;
 use Illuminate\Http\Request as HttpRequest;
+use Illuminate\Support\Facades\DB;
 use Stripe\Webhook;
 
 class StripeWebhookController extends Controller
@@ -34,21 +37,61 @@ class StripeWebhookController extends Controller
             }
 
             if ($payment->status !== 'paid') {
-                $payment->update([
-                    'status' => 'paid',
-                    'stripe_payment_intent_id' => $session->payment_intent ?? null,
-                ]);
+                DB::transaction(function () use ($payment, $session) {
+                    $payment->update([
+                        'status' => 'paid',
+                        'stripe_payment_intent_id' => $session->payment_intent ?? null,
+                    ]);
 
-               $payment->workRequest()->update([
-                'is_paid' => true,
-                'paid_at' => now(),
-            ]);
+                    $workRequest = $payment->workRequest;
+                    $workRequest->update([
+                        'is_paid' => true,
+                        'paid_at' => now(),
+                    ]);
 
+                    if (!$workRequest->technician_id || !$workRequest->final_price_syp) {
+                        return;
+                    }
+
+                    $finalPrice = (int) $workRequest->final_price_syp;
+                    $commissionRate = AppSetting::getCommissionRate();
+                    $commissionAmount = (int) ceil($finalPrice * $commissionRate / 100);
+
+                    Commission::create([
+                        'request_id'        => $workRequest->id,
+                        'technician_id'     => $workRequest->technician_id,
+                        'payment_id'        => $payment->id,
+                        'request_amount'    => $finalPrice,
+                        'commission_rate'   => $commissionRate,
+                        'commission_amount' => $commissionAmount,
+                        'payment_method'    => 'stripe',
+                        'status'            => 'collected',
+                        'collected_at'      => now(),
+                    ]);
+
+                    $existingDebt = (int) Commission::where('technician_id', $workRequest->technician_id)
+                        ->where('status', 'pending_debt')
+                        ->sum('commission_amount');
+
+                    $deductions = $commissionAmount + $existingDebt;
+                    $walletCredit = max(0, $finalPrice - $deductions);
+
+                    if ($walletCredit > 0) {
+                        PaymentController::creditTechnicianWallet($workRequest, $walletCredit);
+                    }
+
+                    if ($existingDebt > 0) {
+                        Commission::where('technician_id', $workRequest->technician_id)
+                            ->where('status', 'pending_debt')
+                            ->update([
+                                'status'       => 'collected',
+                                'collected_at' => now(),
+                            ]);
+                    }
+                });
             }
         }
 
         return response('OK', 200);
     }
 }
-
-

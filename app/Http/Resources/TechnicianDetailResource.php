@@ -20,6 +20,7 @@ class TechnicianDetailResource extends JsonResource
     'service_id' => $this->service_id,
     'years_of_experience' => $this->years_of_experience,
     'skills_description' => $this->skills_description,
+    'max_distance_km' => $this->max_distance_km,
 
     'user' => [
         'name' => $this->user?->name,

@@ -41,10 +41,19 @@ class RequestResource extends JsonResource
                 : null,
             'is_paid' => (bool) $this->is_paid,
             'paid_at' => $this->paid_at,
+            'payment_method' => $this->whenLoaded('payments', function () {
+                $paid = $this->payments->firstWhere('status', 'paid');
+                return $paid?->payment_method;
+            }),
             'can_pay' => $this->status === 'completed'
                 && !empty($this->final_price_syp)
                 && !$this->is_paid,
+            'distance_km' => $this->when(
+                array_key_exists('distance_km', $this->resource->getAttributes()),
+                fn() => round((float) $this->distance_km, 1)
+            ),
             'media' => MediaResource::collection($this->whenLoaded('media')),
+            'address' => new AddressResource($this->whenLoaded('address')),
             'tenant'=>  new ResourcesUserResource($this->whenLoaded('tenant')),
         ];
     }
