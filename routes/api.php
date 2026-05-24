@@ -209,6 +209,9 @@ Route::middleware(['auth:sanctum','role:admin'])
 });
 
 Route::get('/import-data', function () {
-    \Illuminate\Support\Facades\DB::unprepared(file_get_contents(base_path('database/data_only.sql')));
+    DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+    $sql = file_get_contents(base_path('database/data_only.sql'));
+    DB::unprepared($sql);
+    DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     return response()->json(['message' => 'Data imported successfully!']);
 });
