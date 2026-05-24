@@ -83,7 +83,16 @@ class DebtSettlementResource extends Resource
 
                 Tables\Columns\ImageColumn::make('receipt_image')
                     ->label('Receipt')
-                    ->disk('public')
+                    ->getStateUsing(function (DebtSettlement $record) {
+                        $image = (string) $record->receipt_image;
+                        if ($image === '') {
+                            return null;
+                        }
+                        if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://')) {
+                            return $image;
+                        }
+                        return Storage::disk(config('filesystems.default'))->url(ltrim($image, '/'));
+                    })
                     ->square()
                     ->size(60),
 
@@ -235,7 +244,7 @@ class DebtSettlementResource extends Resource
             Infolists\Components\Section::make('Receipt')
                 ->schema([
                     Infolists\Components\ImageEntry::make('receipt_image')
-                        ->disk('public')
+                        ->disk(config('filesystems.default'))
                         ->height(400)
                         ->columnSpanFull(),
                 ]),

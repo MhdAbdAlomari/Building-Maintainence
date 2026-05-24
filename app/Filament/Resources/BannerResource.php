@@ -5,11 +5,13 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\BannerResource\Pages;
 use App\Models\Banner;
 use Filament\Forms;
+use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class BannerResource extends Resource
 {
@@ -23,20 +25,26 @@ class BannerResource extends Resource
     {
         return $form->schema([
             Forms\Components\FileUpload::make('image')
-                ->disk('public')
+                ->disk(config('filesystems.default'))
                 ->directory('banners')
                 ->visibility('public')
                 ->image()
                 ->imageEditor()
                 ->required()
-                ->formatStateUsing(function ($state) {
+                ->shouldFetchFileInformation(false)
+                ->afterStateHydrated(function (BaseFileUpload $component, $state): void {
                     if (blank($state)) {
-                        return $state;
+                        $component->state([]);
+                        return;
                     }
-                    if (preg_match('#/storage/(.+)$#', (string) $state, $m)) {
-                        return $m[1];
+
+                    $path = (string) $state;
+
+                    if (preg_match('#/storage/(.+)$#', $path, $m)) {
+                        $path = $m[1];
                     }
-                    return $state;
+
+                    $component->state([(string) Str::uuid() => $path]);
                 }),
             Forms\Components\TextInput::make('sort_order')->numeric()->default(0)->required(),
             Forms\Components\Toggle::make('is_active')->default(true),
@@ -61,7 +69,7 @@ class BannerResource extends Resource
                         if (str_starts_with($image, 'http://') || str_starts_with($image, 'https://')) {
                             return $image;
                         }
-                        return Storage::disk('public')->url(ltrim($image, '/'));
+                        return Storage::disk(config('filesystems.default'))->url(ltrim($image, '/'));
                     })
                     ->width(100)
                     ->height(60)

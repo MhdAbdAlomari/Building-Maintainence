@@ -59,7 +59,7 @@ class DebtSettlementController extends Controller
             ], 422);
         }
 
-        $path = $request->file('receipt_image')->store('settlements', 'public');
+        $path = $request->file('receipt_image')->store('settlements', config('filesystems.default'));
 
         $settlement = DebtSettlement::create([
             'technician_id' => $technician->id,

@@ -16,7 +16,8 @@
       "PowerShell(php artisan route:list --path=debt)",
       "PowerShell(php artisan route:list --path=admin/app-settings)",
       "PowerShell(php artisan route:list --path=commission)",
-      "PowerShell(php artisan tinker --execute=\"echo App\\\\Models\\\\AppSetting::get\\('owner_name'\\).'|'.App\\\\Models\\\\AppSetting::get\\('owner_phone'\\).'|'.App\\\\Models\\\\AppSetting::get\\('owner_governorate'\\);\")"
+      "PowerShell(php artisan tinker --execute=\"echo App\\\\Models\\\\AppSetting::get\\('owner_name'\\).'|'.App\\\\Models\\\\AppSetting::get\\('owner_phone'\\).'|'.App\\\\Models\\\\AppSetting::get\\('owner_governorate'\\);\")",
+      "PowerShell(php artisan tinker --execute=\"echo 'default disk: '.config\\('filesystems.default'\\);\")"
     ]
   }
 }
